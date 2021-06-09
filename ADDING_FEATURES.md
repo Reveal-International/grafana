@@ -43,3 +43,6 @@ Check the new feature feed work to see what to update.
 1. Add state to global state ```public/app/types/store.ts```
 1. Add reducer to global reducers ```public/app/core/reducers/root.ts```
 
+## Adding new configuration so can be overridden
+1. If you need cfg in back end go services add config to ```pkg/setting/setting.go```
+1. Then map (or simply add from section) to front end config in ```pkg/api/frontendsettings.go```

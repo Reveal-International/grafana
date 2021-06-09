@@ -259,6 +259,11 @@ func (hs *HTTPServer) getFrontendSettingsMap(c *models.ReqContext) (map[string]i
 		"caching": map[string]bool{
 			"enabled": hs.Cfg.SectionWithEnvOverrides("caching").Key("enabled").MustBool(true),
 		},
+		"labelling": map[string]interface{}{
+			"logo":    hs.Cfg.SectionWithEnvOverrides("labelling").Key("logo").MustString(""),
+			"title":   hs.Cfg.SectionWithEnvOverrides("labelling").Key("title").MustString(""),
+			"welcome": hs.Cfg.SectionWithEnvOverrides("labelling").Key("welcome").MustString(""),
+		},
 	}
 
 	if hs.Cfg.GeomapDefaultBaseLayerConfig != nil {
