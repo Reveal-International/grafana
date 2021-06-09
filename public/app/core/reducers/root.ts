@@ -3,6 +3,7 @@ import { CleanUp, cleanUpAction } from '../actions/cleanUp';
 import sharedReducers from 'app/core/reducers';
 import alertingReducers from 'app/features/alerting/state/reducers';
 import teamsReducers from 'app/features/teams/state/reducers';
+import feedsReducers from 'app/features/feeds/state/reducers';
 import apiKeysReducers from 'app/features/api-keys/state/reducers';
 import foldersReducers from 'app/features/folders/state/reducers';
 import dashboardReducers from 'app/features/dashboard/state/reducers';
@@ -20,6 +21,7 @@ const rootReducers = {
   ...sharedReducers,
   ...alertingReducers,
   ...teamsReducers,
+  ...feedsReducers,
   ...apiKeysReducers,
   ...foldersReducers,
   ...dashboardReducers,
