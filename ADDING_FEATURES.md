@@ -16,7 +16,9 @@ http_port = 31000
 ```
 
 Effectively you run the front end in one terminal and back end in the other.
-They automatically pick up changes and recompile.
+* Front end in root dir ```yarn start```
+* Back end in root dir ```make run```
+Both front and back automatically pick up changes and recompile.
 
 Menu structures are hard-coded in go.
 All backend api calls currently are in go.
@@ -46,3 +48,7 @@ Check the new feature feed work to see what to update.
 ## Adding new configuration so can be overridden
 1. If you need cfg in back end go services add config to ```pkg/setting/setting.go```
 1. Then map (or simply add from section) to front end config in ```pkg/api/frontendsettings.go```
+
+## Adding new api
+1. Edit ```pkg/api/api.go```
+2. See ```pkg/api/avenge.go``` for example
