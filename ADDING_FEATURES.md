@@ -52,3 +52,7 @@ Check the new feature feed work to see what to update.
 ## Adding new api
 1. Edit ```pkg/api/api.go```
 2. See ```pkg/api/avenge.go``` for example
+
+## Adding new api
+1. Edit ```pkg/api/api.go```
+2. See ```pkg/api/avenge.go``` for example
