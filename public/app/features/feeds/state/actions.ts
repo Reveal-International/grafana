@@ -2,18 +2,14 @@ import { ThunkResult } from 'app/types';
 import { feedLoaded, feedsLoaded } from './reducers';
 import { updateNavIndex } from 'app/core/actions';
 import { buildNavModel } from './navModel';
+import { getBackendSrv } from '@grafana/runtime';
 
 export function loadFeeds(): ThunkResult<void> {
   return async (dispatch) => {
-    // TODO goto backend - question is do we go our own or delve into GO - My 2c our own
-    // const response = await getBackendSrv().get('/api/feeds/search', { perpage: 1000, page: 1 });
-    // dispatch(feedsLoaded(response.feeds));
-    dispatch(
-      feedsLoaded([
-        { id: 1, name: 'Feed1', enabled: true },
-        { id: 2, name: 'Feed2', enabled: true },
-      ])
-    );
+    // TODO is client an organisation?
+    const clientCode = 'dyn';
+    const response = await getBackendSrv().get('/avenge/api/' + clientCode + '/feeds', {});
+    dispatch(feedsLoaded(response));
   };
 }
 
