@@ -405,6 +405,20 @@ type Cfg struct {
 	// Geomap base layer config
 	GeomapDefaultBaseLayerConfig map[string]interface{}
 	GeomapEnableCustomBaseLayers bool
+	// ====  OUR ENHANCEMENTS
+	ExtMenuPluginsEnabled     bool
+	ExtMenuDataSourcesEnabled bool
+
+	ExtUserPasswordRegularExpression string
+	ExtUserPasswordHint              string
+	ExtUserPasswordFailedMessage     string
+
+	ExtInspectPanelMenuShowQuery bool
+	ExtInspectPanelMenuShowJson  bool
+
+	ExtAvengeUrl string
+	// ====  OUR ENHANCEMENTS
+
 }
 
 // IsLiveConfigEnabled returns true if live should be able to save configs to SQL tables
@@ -1438,6 +1452,10 @@ func (cfg *Cfg) readServerSettings(iniFile *ini.File) error {
 	cfg.ReadTimeout = server.Key("read_timeout").MustDuration(0)
 
 	return nil
+}
+
+func (cfg *Cfg) GetExtAvengeUrl() string {
+	return cfg.ExtAvengeUrl
 }
 
 // GetContentDeliveryURL returns full content delivery URL with /<edition>/<version> added to URL
