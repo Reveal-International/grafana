@@ -19,6 +19,7 @@ export * from './angular';
 export * from './query';
 export * from './preferences';
 export * from './accessControl';
+export * from './metric';
 
 import * as CoreEvents from './events';
 export { CoreEvents };

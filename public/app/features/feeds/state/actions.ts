@@ -3,12 +3,14 @@ import { feedLoaded, feedsLoaded } from './reducers';
 import { updateNavIndex } from 'app/core/actions';
 import { buildNavModel } from './navModel';
 import { getBackendSrv } from '@grafana/runtime';
+import { saveMetric } from '../../metric/metricApi';
 
 export function loadFeeds(): ThunkResult<void> {
   return async (dispatch) => {
     // TODO is client an organisation?
-    const clientCode = 'dyn';
+    const clientCode = '_';
     const response = await getBackendSrv().get('/avenge/api/' + clientCode + '/feeds', {});
+    saveMetric({ name: 'loadFeeds', type: 'feeds', values: { v: 'v1' }, clientCode: clientCode });
     dispatch(feedsLoaded(response));
   };
 }
