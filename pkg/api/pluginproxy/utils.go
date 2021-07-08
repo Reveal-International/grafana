@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -90,5 +91,11 @@ func applyUserHeader(sendUserHeader bool, req *http.Request, user *models.Signed
 	req.Header.Del("X-Grafana-User")
 	if sendUserHeader && !user.IsAnonymous {
 		req.Header.Set("X-Grafana-User", user.Login)
+		req.Header.Set("X-Grafana-Org-Id", strconv.FormatInt(user.OrgId, 10))
+		req.Header.Set("X-Grafana-Ext-Org-Name", user.OrgName)
+		req.Header.Set("X-Grafana-Ext-User-Name", user.Name)
+		req.Header.Set("X-Grafana-Ext-User-Email", user.Email)
+		req.Header.Set("X-Grafana-Ext-User-Id", strconv.FormatInt(user.UserId, 10))
+		req.Header.Set("X-Grafana-Ext-User-Agent", req.UserAgent())
 	}
 }
