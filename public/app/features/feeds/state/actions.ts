@@ -9,7 +9,7 @@ export function loadFeeds(): ThunkResult<void> {
   return async (dispatch) => {
     // TODO is client an organisation?
     const clientCode = '_';
-    const response = await getBackendSrv().get('/avenge/api/' + clientCode + '/feeds', {});
+    const response = await getBackendSrv().get('/avenge/client/' + clientCode + '/feeds', {});
     saveMetric({ name: 'loadFeeds', type: 'feeds', values: { v: 'v1' }, clientCode: clientCode });
     dispatch(feedsLoaded(response));
   };

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 )
 
 // AvengeServer All objects in go are simple struct like C
@@ -17,6 +18,16 @@ type AvengeServer struct {
 // NewAvengeServer Creates a new avenge server
 func NewAvengeServer(cfg *setting.Cfg) *AvengeServer {
 	return &AvengeServer{cfg: cfg}
+}
+
+func SetAvengeHeaders(req *http.Request, user *models.SignedInUser) {
+	req.Header.Set("X-Grafana-User", user.Login)
+	req.Header.Set("X-Grafana-Org-Id", strconv.FormatInt(user.OrgId, 10))
+	req.Header.Set("X-Grafana-Ext-Org-Name", user.OrgName)
+	req.Header.Set("X-Grafana-Ext-User-Name", user.Name)
+	req.Header.Set("X-Grafana-Ext-User-Email", user.Email)
+	req.Header.Set("X-Grafana-Ext-User-Id", strconv.FormatInt(user.UserId, 10))
+	req.Header.Set("X-Grafana-Ext-User-Agent", req.UserAgent())
 }
 
 // Handler This methods handles the proxying off the request - Note is associated with the struct above
@@ -33,6 +44,8 @@ func (a *AvengeServer) Handler(c *models.ReqContext) {
 		req.Host = avengeUrl.Host
 
 		req.URL.Path = util.JoinURLFragments(avengeUrl.Path, proxyPath)
+
+		SetAvengeHeaders(req, c.SignedInUser)
 
 		c.Logger.Info("Avenge reverse proxying request", "proxyPath", proxyPath, "request", req)
 
