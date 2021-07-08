@@ -7,7 +7,7 @@ import { saveMetric } from '../../metric/metricApi';
 
 export function loadFeeds(): ThunkResult<void> {
   return async (dispatch) => {
-    // TODO is client an organisation?
+    // Any client code will do as our org id will be passed to back end..
     const clientCode = '_';
     const response = await getBackendSrv().get('/avenge/client/' + clientCode + '/feeds', {});
     saveMetric({ name: 'loadFeeds', type: 'feeds', values: { v: 'v1' }, clientCode: clientCode });
