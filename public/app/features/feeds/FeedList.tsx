@@ -47,7 +47,10 @@ export class FeedList extends PureComponent<Props, any> {
   renderFeed(feed: Feed) {
     const { editorsCanAdmin, signedInUser } = this.props;
     const feedUrl = `org/feeds/edit/${feed.id}`;
-    const canDelete = signedInUser.isGrafanaAdmin || (editorsCanAdmin && signedInUser.orgRole === OrgRole.Editor);
+    const deleteFeatureEnabled = config.featureToggles['extFeedDelete'];
+    const canDelete =
+      deleteFeatureEnabled &&
+      (signedInUser.isGrafanaAdmin || (editorsCanAdmin && signedInUser.orgRole === OrgRole.Editor));
     return (
       <tr key={feed.id}>
         <td className="link-td">
