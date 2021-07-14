@@ -388,6 +388,12 @@ func (hs *HTTPServer) buildAdminNavLinks(c *models.ReqContext) []*dtos.NavLink {
 		})
 	}
 
+	if c.IsGrafanaAdmin {
+		adminNavLinks = append(adminNavLinks, &dtos.NavLink{
+			Text: "Features", Id: "server-features", Url: hs.Cfg.AppSubURL + "/admin/features", Icon: "bolt",
+		})
+	}
+
 	if hasAccess(ac.ReqGrafanaAdmin, ac.ActionServerStatsRead) {
 		adminNavLinks = append(adminNavLinks, &dtos.NavLink{
 			Text: "Stats", Id: "server-stats", Url: hs.Cfg.AppSubURL + "/admin/stats", Icon: "graph-bar",
