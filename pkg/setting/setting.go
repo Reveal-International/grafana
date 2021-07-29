@@ -406,16 +406,6 @@ type Cfg struct {
 	GeomapDefaultBaseLayerConfig map[string]interface{}
 	GeomapEnableCustomBaseLayers bool
 	// ====  OUR ENHANCEMENTS
-	ExtMenuPluginsEnabled     bool
-	ExtMenuDataSourcesEnabled bool
-
-	ExtUserPasswordRegularExpression string
-	ExtUserPasswordHint              string
-	ExtUserPasswordFailedMessage     string
-
-	ExtInspectPanelMenuShowQuery bool
-	ExtInspectPanelMenuShowJson  bool
-
 	ExtAvengeUrl string
 	// ====  OUR ENHANCEMENTS
 
