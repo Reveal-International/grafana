@@ -24,8 +24,6 @@ export interface StoreState {
   alertRules: AlertRulesState;
   teams: TeamsState;
   team: TeamState;
-  feeds: FeedsState;
-  feed: FeedState;
   folder: FolderState;
   dashboard: DashboardState;
   panelEditor: PanelEditorState;
