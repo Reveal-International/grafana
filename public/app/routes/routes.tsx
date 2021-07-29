@@ -198,21 +198,6 @@ export function getAppRoutes(): RouteDescriptor[] {
       component: SafeDynamicImport(() => import(/* webpackChunkName: "TeamPages" */ 'app/features/teams/TeamPages')),
     },
     {
-      path: '/org/feeds',
-      roles: () => (config.editorsCanAdmin ? [] : ['Editor', 'Admin']),
-      component: SafeDynamicImport(() => import(/* webpackChunkName: "TeamList" */ 'app/features/feeds/FeedList')),
-    },
-    {
-      path: '/org/feeds/new',
-      roles: () => (config.editorsCanAdmin ? [] : ['Admin']),
-      component: SafeDynamicImport(() => import(/* webpackChunkName: "CreateTeam" */ 'app/features/feeds/CreateFeed')),
-    },
-    // {
-    //   path: '/org/feeds/edit/:id/:page?',
-    //   roles: () => (config.editorsCanAdmin ? [] : ['Admin']),
-    //   component: SafeDynamicImport(() => import(/* webpackChunkName: "TeamPages" */ 'app/features/feeds/FeedPages')),
-    // },
-    {
       path: '/profile',
       component: SafeDynamicImport(
         () => import(/* webpackChunkName: "UserProfileEditPage" */ 'app/features/profile/UserProfileEditPage')

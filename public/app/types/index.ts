@@ -1,5 +1,4 @@
 export * from './teams';
-export * from './feeds';
 export * from './alerting';
 export * from './location';
 export * from './folders';
