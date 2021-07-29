@@ -283,26 +283,14 @@ func (hs *HTTPServer) getNavTree(c *models.ReqContext, hasEditPerm bool) ([]*dto
 		})
 	}
 
-	if c.OrgRole == models.ROLE_ADMIN || (hs.Cfg.EditorsCanAdmin && c.OrgRole == models.ROLE_EDITOR) {
-		configNodes = append(configNodes, &dtos.NavLink{
-			Text:        "Feeds",
-			Id:          "feeds",
-			Description: "Manage org feeds",
-			Icon:        "rocket",
-			Url:         hs.Cfg.AppSubURL + "/org/feeds",
-		})
-	}
-
 	if c.OrgRole == models.ROLE_ADMIN {
-
-		//      We disable plugins..! TODO configurable
-		// 		configNodes = append(configNodes, &dtos.NavLink{
-		// 			Text:        "Plugins",
-		// 			Id:          "plugins",
-		// 			Description: "View and configure plugins",
-		// 			Icon:        "plug",
-		// 			Url:         hs.Cfg.AppSubURL + "/plugins",
-		// 		})
+		configNodes = append(configNodes, &dtos.NavLink{
+			Text:        "Plugins",
+			Id:          "plugins",
+			Description: "View and configure plugins",
+			Icon:        "plug",
+			Url:         hs.Cfg.AppSubURL + "/plugins",
+		})
 
 		configNodes = append(configNodes, &dtos.NavLink{
 			Text:        "Preferences",
@@ -385,12 +373,6 @@ func (hs *HTTPServer) buildAdminNavLinks(c *models.ReqContext) []*dtos.NavLink {
 	if hasAccess(ac.ReqGrafanaAdmin, ac.ActionSettingsRead) {
 		adminNavLinks = append(adminNavLinks, &dtos.NavLink{
 			Text: "Settings", Id: "server-settings", Url: hs.Cfg.AppSubURL + "/admin/settings", Icon: "sliders-v-alt",
-		})
-	}
-
-	if c.IsGrafanaAdmin {
-		adminNavLinks = append(adminNavLinks, &dtos.NavLink{
-			Text: "Features", Id: "server-features", Url: hs.Cfg.AppSubURL + "/admin/features", Icon: "bolt",
 		})
 	}
 
