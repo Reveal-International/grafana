@@ -478,6 +478,11 @@ func (hs *HTTPServer) registerRoutes() {
 	// grafana.net proxy
 	r.Any("/api/gnet/*", reqSignedIn, ProxyGnetRequest)
 
+	// avenge proxy
+	avengeServer := NewAvengeServer(hs.Cfg)
+	// TODO security here?
+	r.Any("/avenge/*", avengeServer.Handler)
+
 	// Gravatar service.
 	avatarCacheServer := avatar.NewCacheServer(hs.Cfg)
 	r.Get("/avatar/:hash", avatarCacheServer.Handler)
