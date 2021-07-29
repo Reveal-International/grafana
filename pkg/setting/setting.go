@@ -405,6 +405,10 @@ type Cfg struct {
 	// Geomap base layer config
 	GeomapDefaultBaseLayerConfig map[string]interface{}
 	GeomapEnableCustomBaseLayers bool
+	// ====  OUR ENHANCEMENTS
+	ExtAvengeUrl string
+	// ====  OUR ENHANCEMENTS
+
 }
 
 // IsLiveConfigEnabled returns true if live should be able to save configs to SQL tables
