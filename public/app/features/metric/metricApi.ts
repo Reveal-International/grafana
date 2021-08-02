@@ -4,11 +4,12 @@ import { contextSrv } from 'app/core/services/context_srv';
 
 export function saveMetric(metric: Metric) {
   console.log('Save Metric', metric);
+  const now = new Date();
   if (!metric.start) {
-    metric.start = new Date();
+    metric.start = now;
   }
   if (!metric.finish) {
-    metric.finish = new Date();
+    metric.finish = now;
   }
   if (!metric.category) {
     metric.category = 'grafana';

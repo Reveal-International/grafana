@@ -1,7 +1,7 @@
 export interface Metric {
   start?: Date;
   finish?: Date;
-  clientCode: string;
+  clientCode?: string;
   type: string;
   name: string;
   category?: string;
@@ -12,6 +12,6 @@ export interface Metric {
   userOrgId?: string;
   // values are fully indexed and searchable
   values?: { [k: string]: any };
-  // date is not indexed and only available for reference
+  // data is not indexed and only available for reference
   data?: { [k: string]: any };
 }
