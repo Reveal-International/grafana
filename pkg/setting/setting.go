@@ -989,6 +989,10 @@ func (cfg *Cfg) Load(args *CommandLineArgs) error {
 	}
 	cfg.GeomapEnableCustomBaseLayers = geomapSection.Key("enable_custom_baselayers").MustBool(true)
 
+	extSettings := iniFile.Section("ext")
+	cfg.ExtAvengeUrl = extSettings.Key("avenge_url").String()
+	log.Infof("External Avenge url configured as %s", cfg.ExtAvengeUrl)
+
 	cfg.readDateFormats()
 	cfg.readSentryConfig()
 
