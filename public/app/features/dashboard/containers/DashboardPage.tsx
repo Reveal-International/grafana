@@ -30,7 +30,6 @@ import { DashboardLoading } from '../components/DashboardLoading/DashboardLoadin
 import { DashboardFailed } from '../components/DashboardLoading/DashboardFailed';
 import { DashboardPrompt } from '../components/DashboardPrompt/DashboardPrompt';
 import classnames from 'classnames';
-import { saveMetric } from '../../metric/metricApi';
 
 export interface DashboardPageRouteParams {
   uid?: string;
@@ -131,18 +130,6 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     if (!dashboard) {
       return;
     }
-
-    saveMetric({
-      category: 'grafana',
-      type: 'dashboard-access',
-      name: dashboard.title,
-      values: {
-        uid: dashboard.uid,
-      },
-      data: {
-        time: dashboard.time,
-      },
-    });
 
     // if we just got dashboard update title
     if (prevProps.dashboard !== dashboard) {

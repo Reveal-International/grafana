@@ -20,7 +20,7 @@ func NewAvengeServer(cfg *setting.Cfg) *AvengeServer {
 	return &AvengeServer{cfg: cfg}
 }
 
-func SetAvengeHeaders(req *http.Request, user *models.SignedInUser) {
+func (a *AvengeServer) SetAvengeHeaders(req *http.Request, user *models.SignedInUser) {
 	req.Header.Set("X-Grafana-User", user.Login)
 	req.Header.Set("X-Grafana-Org-Id", strconv.FormatInt(user.OrgId, 10))
 	req.Header.Set("X-Grafana-Ext-Org-Name", user.OrgName)
@@ -28,6 +28,16 @@ func SetAvengeHeaders(req *http.Request, user *models.SignedInUser) {
 	req.Header.Set("X-Grafana-Ext-User-Email", user.Email)
 	req.Header.Set("X-Grafana-Ext-User-Id", strconv.FormatInt(user.UserId, 10))
 	req.Header.Set("X-Grafana-Ext-User-Agent", req.UserAgent())
+	req.Header.Set("X-Grafana-Ext-Remote-Addr", req.RemoteAddr)
+	req.Header.Set("X-Grafana-Ext-Admin", strconv.FormatBool(user.IsGrafanaAdmin))
+	req.Header.Set("X-Grafana-Ext-Org-Role", string(user.OrgRole))
+	if len(a.cfg.LoginCookieName) > 0 {
+		cookie, err := req.Cookie(a.cfg.LoginCookieName)
+		if err == nil {
+			val, _ := url.QueryUnescape(cookie.Value)
+			req.Header.Set("X-Grafana-Ext-Session-Id", val)
+		}
+	}
 }
 
 // Handler This methods handles the proxying off the request - Note is associated with the struct above
@@ -45,7 +55,7 @@ func (a *AvengeServer) Handler(c *models.ReqContext) {
 
 		req.URL.Path = util.JoinURLFragments(avengeUrl.Path, proxyPath)
 
-		SetAvengeHeaders(req, c.SignedInUser)
+		a.SetAvengeHeaders(req, c.SignedInUser)
 
 		c.Logger.Info("Avenge reverse proxying request", "proxyPath", proxyPath, "request", req)
 

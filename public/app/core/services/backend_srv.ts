@@ -139,10 +139,6 @@ export class BackendSrv implements BackendService {
 
   private parseRequestOptions(options: BackendSrvRequest): BackendSrvRequest {
     const orgId = this.dependencies.contextSrv.user?.orgId;
-    const orgName = this.dependencies.contextSrv.user?.orgName;
-    const userEmail = this.dependencies.contextSrv.user?.email;
-    const userId = this.dependencies.contextSrv.user?.id;
-    const userName = this.dependencies.contextSrv.user?.login;
 
     // init retry counter
     options.retry = options.retry ?? 0;
@@ -153,29 +149,6 @@ export class BackendSrv implements BackendService {
         options.headers['X-Grafana-Org-Id'] = orgId;
       }
 
-      // Extension work..
-
-      if (orgName) {
-        options.headers = options.headers ?? {};
-        options.headers['X-Grafana-Ext-Org-Name'] = orgName;
-      }
-
-      if (userEmail) {
-        options.headers = options.headers ?? {};
-        options.headers['X-Grafana-Ext-User-Email'] = userEmail;
-      }
-
-      if (userId) {
-        options.headers = options.headers ?? {};
-        options.headers['X-Grafana-Ext-User-Id'] = userId;
-      }
-
-      if (userName) {
-        options.headers = options.headers ?? {};
-        options.headers['X-Grafana-Ext-User-Name'] = userName;
-      }
-
-      // Done extension work
       if (options.url.startsWith('/')) {
         options.url = options.url.substring(1);
       }

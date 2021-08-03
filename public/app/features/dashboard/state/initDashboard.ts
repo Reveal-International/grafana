@@ -24,6 +24,7 @@ import { emitDashboardViewEvent } from './analyticsProcessor';
 import { dashboardWatcher } from 'app/features/live/dashboard/dashboardWatcher';
 import { locationService } from '@grafana/runtime';
 import { createDashboardQueryRunner } from '../../query/state/DashboardQueryRunner/DashboardQueryRunner';
+import { saveMetric } from '../../metric/metricApi';
 
 export interface InitDashboardArgs {
   urlUid?: string;
@@ -137,6 +138,19 @@ export function initDashboard(args: InitDashboardArgs): ThunkResult<void> {
       console.error(err);
       return;
     }
+
+    saveMetric({
+      category: 'grafana',
+      group: 'dashboard',
+      type: 'dashboard-load',
+      name: dashboard.title,
+      values: {
+        uid: dashboard.uid,
+      },
+      data: {
+        time: dashboard.time,
+      },
+    });
 
     // add missing orgId query param
     const storeState = getState();

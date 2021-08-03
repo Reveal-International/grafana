@@ -17,6 +17,7 @@ import { locationService } from '@grafana/runtime';
 import { ShiftTimeEvent, ShiftTimeEventPayload, ZoomOutEvent } from '../../../types/events';
 import { contextSrv, ContextSrv } from 'app/core/services/context_srv';
 import appEvents from 'app/core/app_events';
+import { saveMetric } from '../../metric/metricApi';
 
 export class TimeSrv {
   time: any;
@@ -238,6 +239,20 @@ export class TimeSrv {
   }
 
   refreshDashboard() {
+    if (this.dashboard) {
+      saveMetric({
+        category: 'grafana',
+        group: 'dashboard',
+        type: 'dashboard-range-change',
+        name: this.dashboard.title,
+        values: {
+          uid: this.dashboard.uid,
+        },
+        data: {
+          timeRange: this.timeRange(),
+        },
+      });
+    }
     this.dashboard?.timeRangeUpdated(this.timeRange());
   }
 

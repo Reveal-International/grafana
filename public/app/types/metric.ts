@@ -5,6 +5,8 @@ export interface Metric {
   type: string;
   name: string;
   category?: string;
+  tag?: string;
+  group?: string;
   source?: string;
   userId?: string;
   userName?: string;
