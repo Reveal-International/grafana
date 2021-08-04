@@ -989,6 +989,10 @@ func (cfg *Cfg) Load(args *CommandLineArgs) error {
 	}
 	cfg.GeomapEnableCustomBaseLayers = geomapSection.Key("enable_custom_baselayers").MustBool(true)
 
+	// NOTE : YOU MUST PUT THIS INTO conf/sample.ini and conf/defaults.ini or else you will
+	// NOTE : not be able to override in docker as when executed as  ./bin/grafana-server --config=conf/sample.ini
+	// NOTE:  you cannot provide arbitrary cfg unless already exists in that config file - is bonkas!
+	// NOTE:  Kudos to Steve P who found this out ;-)
 	extSettings := iniFile.Section("ext")
 	cfg.ExtAvengeUrl = extSettings.Key("avenge_url").String()
 	log.Infof("External Avenge API url is configured as %s", cfg.ExtAvengeUrl)
