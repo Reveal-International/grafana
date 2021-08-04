@@ -991,7 +991,7 @@ func (cfg *Cfg) Load(args *CommandLineArgs) error {
 
 	extSettings := iniFile.Section("ext")
 	cfg.ExtAvengeUrl = extSettings.Key("avenge_url").String()
-	log.Infof("External Avenge url configured as %s", cfg.ExtAvengeUrl)
+	log.Infof("External Avenge API url is configured as %s", cfg.ExtAvengeUrl)
 
 	cfg.readDateFormats()
 	cfg.readSentryConfig()
