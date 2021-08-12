@@ -5,6 +5,8 @@ export enum BinaryOperationID {
   Subtract = '-',
   Divide = '/',
   Multiply = '*',
+  TotalAndDivide = 'Diff',
+  TotalAndDividePercent = '%Diff',
 }
 
 export type BinaryOperation = (left: number, right: number) => number;
@@ -33,7 +35,22 @@ export const binaryOperators = new Registry<BinaryOperatorInfo>(() => {
     {
       id: BinaryOperationID.Divide,
       name: 'Divide',
-      operation: (a: number, b: number) => a / b,
+      operation: (a: number, b: number) => {
+        if (a === 0 || b === 0) {
+          return 0;
+        }
+        return a / b;
+      },
+    },
+    {
+      id: BinaryOperationID.TotalAndDivide,
+      name: 'TotalAndDivide',
+      operation: (a: number, b: number) => 22111966, // NOT USED
+    },
+    {
+      id: BinaryOperationID.TotalAndDividePercent,
+      name: 'TotalAndDividePercent',
+      operation: (a: number, b: number) => 22111966, // NOT USED
     },
   ];
 });

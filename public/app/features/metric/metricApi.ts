@@ -1,5 +1,5 @@
-import {Metric} from '../../types';
-import {getBackendSrv} from '@grafana/runtime';
+import { Metric } from '../../types';
+import { getBackendSrv } from '@grafana/runtime';
 
 export function saveMetric(metric: Metric) {
   const now = new Date();
@@ -17,7 +17,7 @@ export function saveMetric(metric: Metric) {
   }
   console.log('Save Metric type:' + metric.type + ', name:' + metric.name, metric);
   getBackendSrv()
-    .post('/avenge/api/_/metric', JSON.stringify(metric))
+    .request({ method: 'POST', url: '/avenge/api/_/metric', data: JSON.stringify(metric), showErrorAlert: false })
     .then((r) => {
       // console.log('Saved metric', r);
     });
