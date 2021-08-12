@@ -203,32 +203,37 @@ function findFieldValuesWithNameOrConstant(frame: DataFrame, name: string, allFr
   return undefined;
 }
 
+function totalAndDivide(options: BinaryOptions, allFrames: DataFrame[]): ValuesCreator {
+  // Lets do our own calculations AVENGE-96
+  // This is a custom calculation that totals all values and then divides them
+  // this is becase a/b + c/d != (a+c) / (b+d) 
+  return (frame: DataFrame) => {
+    const left = findFieldValuesWithNameOrConstant(frame, options.left, allFrames);
+    const right = findFieldValuesWithNameOrConstant(frame, options.right, allFrames);
+    if (!left || !right) {
+      return (undefined as unknown) as Vector;
+    }
+    let leftTotal = 0.0;
+    let rightTotal = 0.0;
+    for (let i = 0; i < left.length; i++) {
+      leftTotal += left.get(i);
+      rightTotal += right.get(i);
+    }
+    let result = leftTotal / rightTotal;
+    if (options.operator === BinaryOperationID.TotalAndDividePercent) {
+      // They want a percentage
+      result = (result - 1) * 100.0
+    }
+    const v = new ArrayVector<number>();
+    v.add(result);
+    return v;
+  };
+}
+
 function getBinaryCreator(options: BinaryOptions, allFrames: DataFrame[]): ValuesCreator {
   const operator = binaryOperators.getIfExists(options.operator);
-
   if (options.operator === BinaryOperationID.TotalAndDivide || options.operator === BinaryOperationID.TotalAndDividePercent) {
-    // Lets do our own calculations AVENGE-96
-    return (frame: DataFrame) => {
-      const left = findFieldValuesWithNameOrConstant(frame, options.left, allFrames);
-      const right = findFieldValuesWithNameOrConstant(frame, options.right, allFrames);
-      if (!left || !right || !operator) {
-        return (undefined as unknown) as Vector;
-      }
-      let leftTotal = 0.0;
-      let rightTotal = 0.0;
-      for (let i = 0; i < left.length; i++) {
-        leftTotal += left.get(i);
-        rightTotal += right.get(i);
-      }
-      let result = leftTotal / rightTotal;
-      if (options.operator === BinaryOperationID.TotalAndDividePercent) {
-        result = (result - 1) * 100.0
-      }
-      const v = new ArrayVector<number>();
-      v.add(result);
-      console.log('Diff calculated', result);
-      return v;
-    };
+    return totalAndDivide(options, allFrames);
   }
 
   return (frame: DataFrame) => {
