@@ -206,7 +206,7 @@ function findFieldValuesWithNameOrConstant(frame: DataFrame, name: string, allFr
 function totalAndDivide(options: BinaryOptions, allFrames: DataFrame[]): ValuesCreator {
   // Lets do our own calculations AVENGE-96
   // This is a custom calculation that totals all values and then divides them
-  // this is becase a/b + c/d != (a+c) / (b+d) 
+  // this is becase a/b + c/d != (a+c) / (b+d)
   return (frame: DataFrame) => {
     const left = findFieldValuesWithNameOrConstant(frame, options.left, allFrames);
     const right = findFieldValuesWithNameOrConstant(frame, options.right, allFrames);
@@ -219,10 +219,14 @@ function totalAndDivide(options: BinaryOptions, allFrames: DataFrame[]): ValuesC
       leftTotal += left.get(i);
       rightTotal += right.get(i);
     }
-    let result = leftTotal / rightTotal;
-    if (options.operator === BinaryOperationID.TotalAndDividePercent) {
-      // They want a percentage
-      result = (result - 1) * 100.0
+
+    let result = 0;
+    if (leftTotal && rightTotal) {
+       result = leftTotal / rightTotal;
+      if (options.operator === BinaryOperationID.TotalAndDividePercent) {
+        // They want a percentage
+        result = (result - 1) * 100.0;
+      }
     }
     const v = new ArrayVector<number>();
     v.add(result);
