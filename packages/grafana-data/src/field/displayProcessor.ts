@@ -33,7 +33,7 @@ const timeFormats: KeyValue<boolean> = {
   dateTimeAsLocal: true,
   dateTimeAsLocalNoDateIfToday: true,
   dateTimeFromNow: true,
-  // Hhave to puit these here as well as categories.ys so this doesn't do its own formatting.
+  // Have to put these here as well as categories.ys so this doesn't do its own formatting.
   dateTimeAsDateOnly: true,
   dateTimeAsTimeOnly: true,
   dateTimeAsMonthYearShort: true,
