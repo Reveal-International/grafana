@@ -222,7 +222,7 @@ function totalAndDivide(options: BinaryOptions, allFrames: DataFrame[]): ValuesC
 
     let result = 0;
     if (leftTotal && rightTotal) {
-       result = leftTotal / rightTotal;
+      result = leftTotal / rightTotal;
       if (options.operator === BinaryOperationID.TotalAndDividePercent) {
         // They want a percentage
         result = (result - 1) * 100.0;
@@ -236,7 +236,10 @@ function totalAndDivide(options: BinaryOptions, allFrames: DataFrame[]): ValuesC
 
 function getBinaryCreator(options: BinaryOptions, allFrames: DataFrame[]): ValuesCreator {
   const operator = binaryOperators.getIfExists(options.operator);
-  if (options.operator === BinaryOperationID.TotalAndDivide || options.operator === BinaryOperationID.TotalAndDividePercent) {
+  if (
+    options.operator === BinaryOperationID.TotalAndDivide ||
+    options.operator === BinaryOperationID.TotalAndDividePercent
+  ) {
     return totalAndDivide(options, allFrames);
   }
 

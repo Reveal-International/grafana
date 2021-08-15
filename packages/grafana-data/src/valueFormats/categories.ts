@@ -30,6 +30,12 @@ import {
   toSeconds,
   toTimeTicks,
   dateTimeSystemFormatter,
+  getDateOnly,
+  getTimeOnly,
+  getMonthYearShort,
+  getMonthYearLong,
+  getDayMonthYearShort,
+  getDayMonthYearLong,
 } from './dateTimeFormatters';
 import { toHex, sci, toHex0x, toPercent, toPercentUnit } from './arithmeticFormatters';
 import { binaryPrefix, currency, SIPrefix } from './symbolFormatters';
@@ -204,6 +210,13 @@ export const getCategories = (): ValueFormatCategory[] => [
       },
       { name: 'Datetime default', id: 'dateTimeAsSystem', fn: dateTimeSystemFormatter },
       { name: 'From Now', id: 'dateTimeFromNow', fn: dateTimeFromNow },
+      // Note you have to put these in displayProcessors.ts#timeFormats as well
+      { name: 'Date only', id: 'dateTimeAsDateOnly', fn: getDateOnly() },
+      { name: 'Time only', id: 'dateTimeAsTimeOnly', fn: getTimeOnly() },
+      { name: 'Month, Year short', id: 'dateTimeAsMonthYearShort', fn: getMonthYearShort() },
+      { name: 'Month, Year long', id: 'dateTimeAsMonthYearLong', fn: getMonthYearLong() },
+      { name: 'Day, Month, Year short', id: 'dateTimeAsDayMonthYearShort', fn: getDayMonthYearShort() },
+      { name: 'Day, Month, Year long', id: 'dateTimeAsDayMonthYearLong', fn: getDayMonthYearLong() },
     ],
   },
   {
