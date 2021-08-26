@@ -59,7 +59,7 @@ export const plugin = new PanelPlugin<PopulationPanelOptions>(PopulationPanel)
     builder.addTextInput({
       path: 'populationZone',
       name: 'Zone code',
-      description: 'Population zone code.',
+      description: 'Population zone code configured in the client',
       settings: {
         placeholder: 'my_zone',
       },
