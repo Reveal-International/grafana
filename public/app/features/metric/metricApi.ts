@@ -15,7 +15,8 @@ export function saveMetric(metric: Metric) {
   if (!metric.values) {
     metric.values = {};
   }
-  console.log('Save Metric type:' + metric.type + ', name:' + metric.name, metric);
+  // eslint-disable-next-line no-console
+  console.debug('Save Metric type:' + metric.type + ', name:' + metric.name, metric);
   getBackendSrv()
     .request({ method: 'POST', url: '/avenge/api/_/metric', data: JSON.stringify(metric), showErrorAlert: false })
     .then((r) => {
