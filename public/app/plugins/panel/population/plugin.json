@@ -10,8 +10,8 @@
       "name": "Reveal"
     },
     "logos": {
-      "small": "img/population.jpg",
-      "large": "img/population.jpg"
+      "small": "img/population.svg",
+      "large": "img/population.svg"
     }
   }
 }
