@@ -1,0 +1,17 @@
+{
+  "type": "panel",
+  "name": "Population",
+  "id": "population",
+
+  "skipDataQuery": true,
+
+  "info": {
+    "author": {
+      "name": "Reveal"
+    },
+    "logos": {
+      "small": "img/population.jpg",
+      "large": "img/population.jpg"
+    }
+  }
+}

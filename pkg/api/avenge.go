@@ -1,13 +1,14 @@
 package api
 
 import (
-	"github.com/grafana/grafana/pkg/models"
-	"github.com/grafana/grafana/pkg/setting"
-	"github.com/grafana/grafana/pkg/util"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+
+	"github.com/grafana/grafana/pkg/models"
+	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 // AvengeServer All objects in go are simple struct like C
@@ -57,7 +58,7 @@ func (a *AvengeServer) Handler(c *models.ReqContext) {
 
 		a.SetAvengeHeaders(req, c.SignedInUser)
 
-		c.Logger.Info("Avenge reverse proxying request", "proxyPath", proxyPath, "request", req)
+		c.Logger.Debug("Avenge reverse proxying request", "proxyPath", proxyPath, "request", req)
 
 		// clear cookie headers
 		req.Header.Del("Cookie")
