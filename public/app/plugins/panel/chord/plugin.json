@@ -1,0 +1,17 @@
+{
+  "type": "panel",
+  "name": "Chord",
+  "id": "chord",
+
+  "skipDataQuery": true,
+
+  "info": {
+    "author": {
+      "name": "Reveal"
+    },
+    "logos": {
+      "small": "img/chord.svg",
+      "large": "img/chord.svg"
+    }
+  }
+}
