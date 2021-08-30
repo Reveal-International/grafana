@@ -155,6 +155,8 @@ export interface TimeSeries extends QueryResultBase {
   datapoints: TimeSeriesPoints;
   unit?: string;
   tags?: Labels;
+  timeOffset?: number;
+  timeOffsetLabel?: string;
 }
 
 export enum NullValueMode {

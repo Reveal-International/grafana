@@ -36,6 +36,10 @@ export class ElasticResponse {
   processMetrics(esAgg: any, target: ElasticsearchQuery, seriesList: any, props: any) {
     let newSeries: any;
 
+    // Is there any time offset?
+    const timeOffset = esAgg.rev_shift ? esAgg.rev_shift.millis : 0;
+    const timeOffsetLabel = esAgg.rev_shift ? esAgg.rev_shift.label : '';
+
     for (let y = 0; y < target.metrics!.length; y++) {
       const metric = target.metrics![y];
       if (metric.hide) {
@@ -44,7 +48,7 @@ export class ElasticResponse {
 
       switch (metric.type) {
         case 'count': {
-          newSeries = { datapoints: [], metric: 'count', props, refId: target.refId };
+          newSeries = { datapoints: [], metric: 'count', timeOffset, timeOffsetLabel, props, refId: target.refId };
           for (let i = 0; i < esAgg.buckets.length; i++) {
             const bucket = esAgg.buckets[i];
             const value = bucket.doc_count;
@@ -66,6 +70,8 @@ export class ElasticResponse {
               datapoints: [],
               metric: 'p' + percentileName,
               props: props,
+              timeOffset,
+              timeOffsetLabel,
               field: metric.field,
               refId: target.refId,
             };
@@ -90,6 +96,8 @@ export class ElasticResponse {
               datapoints: [],
               metric: statName,
               props: props,
+              timeOffset,
+              timeOffsetLabel,
               field: metric.field,
               refId: target.refId,
             };
@@ -117,6 +125,8 @@ export class ElasticResponse {
                 datapoints: [],
                 metric: metric.type,
                 props: props,
+                timeOffset,
+                timeOffsetLabel,
                 refId: target.refId,
                 field: metricField,
               };
@@ -143,6 +153,8 @@ export class ElasticResponse {
             metric: metric.type,
             metricId: metric.id,
             props: props,
+            timeOffset,
+            timeOffsetLabel,
             refId: target.refId,
           };
 

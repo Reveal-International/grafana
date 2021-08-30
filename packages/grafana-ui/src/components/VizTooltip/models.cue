@@ -3,5 +3,6 @@ package grafanaschema
 TooltipDisplayMode: "single" | "multi" | "none" @cuetsy(targetType="enum")
 
 VizTooltipOptions: {
-    mode: TooltipDisplayMode
+	mode: TooltipDisplayMode
+	timeOffsetFormat?: string
 } @cuetsy(targetType="interface")

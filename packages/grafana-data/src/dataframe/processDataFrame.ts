@@ -99,6 +99,13 @@ function convertTimeSeriesToDataFrame(timeSeries: TimeSeries): DataFrame {
     (fields[1].config as FieldConfig).displayNameFromDS = timeSeries.title;
   }
 
+  if (timeSeries.timeOffset) {
+    (fields[0].config as FieldConfig).timeOffset = timeSeries.timeOffset;
+    (fields[1].config as FieldConfig).timeOffset = timeSeries.timeOffset;
+    (fields[0].config as FieldConfig).timeOffsetLabel = timeSeries.timeOffsetLabel;
+    (fields[1].config as FieldConfig).timeOffsetLabel = timeSeries.timeOffsetLabel;
+  }
+
   return {
     name: timeSeries.target || (timeSeries as any).name,
     refId: timeSeries.refId,

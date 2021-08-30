@@ -43,7 +43,11 @@ export function getFieldDisplayName(field: Field, frame?: DataFrame, allFrames?:
     return existingTitle;
   }
 
-  const displayName = calculateFieldDisplayName(field, frame, allFrames);
+  let displayName = calculateFieldDisplayName(field, frame, allFrames);
+  if (displayName.indexOf('${timeOffset}') !== -1 && field.config.timeOffsetLabel) {
+    // More configurable in terms of format perhaps?
+    displayName = displayName.replace('${timeOffset}', field.config.timeOffsetLabel);
+  }
   field.state = field.state || {};
   field.state.displayName = displayName;
 

@@ -6,17 +6,20 @@ import {
   DashboardCursorSync,
   DataFrame,
   FALLBACK_COLOR,
+  Field,
   FieldType,
   formattedValueToString,
   getDisplayProcessor,
   getFieldDisplayName,
   TimeZone,
+  ValueFormatter,
 } from '@grafana/data';
 import { SeriesTable, SeriesTableRowProps, TooltipDisplayMode, VizTooltipContainer } from '../../VizTooltip';
 import { UPlotConfigBuilder } from '../config/UPlotConfigBuilder';
 import { findMidPointYPosition, pluginLog } from '../utils';
 import { useTheme2 } from '../../../themes/ThemeContext';
 import uPlot from 'uplot';
+import { toDateTimeValueFormatter } from '../../../../../grafana-data/src/valueFormats/dateTimeFormatters';
 
 interface TooltipPluginProps {
   timeZone: TimeZone;
@@ -24,6 +27,7 @@ interface TooltipPluginProps {
   config: UPlotConfigBuilder;
   mode?: TooltipDisplayMode;
   sync?: DashboardCursorSync;
+  timeOffsetFormat?: string;
   // Allows custom tooltip content rendering. Exposes aligned data frame with relevant indexes for data inspection
   // Use field.state.origin indexes from alignedData frame field to get access to original data frame and field index.
   renderTooltip?: (alignedFrame: DataFrame, seriesIdx: number | null, datapointIdx: number | null) => React.ReactNode;
@@ -36,6 +40,7 @@ const TOOLTIP_OFFSET = 10;
  */
 export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
   mode = TooltipDisplayMode.Single,
+  timeOffsetFormat = '',
   sync,
   timeZone,
   config,
@@ -160,6 +165,22 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
 
   const xVal = xFieldFmt(xField!.values.get(focusedPointIdx)).text;
 
+  const fieldDisplayLabel = (field: Field, dataFrame: DataFrame) => {
+    let label = getFieldDisplayName(field, dataFrame);
+    if (field.config.timeOffset) {
+      // TODO maybe make more configurable?
+      const time = xField!.values.get(focusedPointIdx) - field.config.timeOffset;
+      let xValueStr;
+      if (timeOffsetFormat) {
+        xValueStr = toDateTimeValueFormatter(timeOffsetFormat)(time).text;
+      } else {
+        xValueStr = xFieldFmt(time).text;
+      }
+      label = `${label} @ ${xValueStr}`;
+    }
+    return label;
+  };
+
   if (!renderTooltip) {
     // when interacting with a point in single mode
     if (mode === TooltipDisplayMode.Single && focusedSeriesIdx !== null) {
@@ -177,7 +198,7 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
           series={[
             {
               color: display.color || FALLBACK_COLOR,
-              label: getFieldDisplayName(field, otherProps.data),
+              label: fieldDisplayLabel(field, otherProps.data),
               value: display ? formattedValueToString(display) : null,
             },
           ]}
@@ -208,7 +229,7 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
 
         series.push({
           color: display.color || FALLBACK_COLOR,
-          label: getFieldDisplayName(field, frame),
+          label: fieldDisplayLabel(field, frame),
           value: display ? formattedValueToString(display) : null,
           isActive: focusedSeriesIdx === i,
         });

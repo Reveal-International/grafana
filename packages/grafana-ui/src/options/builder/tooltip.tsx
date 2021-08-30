@@ -26,4 +26,15 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
       options,
     },
   });
+
+  builder.addTextInput({
+    path: 'tooltip.timeOffsetFormat',
+    name: 'Time offset format [WIP]',
+    description: 'Format applied to any offset time ranges',
+    category: ['Tooltip'],
+    defaultValue: '',
+    settings: {
+      placeholder: 'DD-MM-YYYY HH:mm:ss',
+    },
+  });
 }
