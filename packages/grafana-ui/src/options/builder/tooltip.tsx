@@ -29,8 +29,8 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
 
   builder.addTextInput({
     path: 'tooltip.timeOffsetFormat',
-    name: 'Time offset format [WIP]',
-    description: 'Format applied to any offset time ranges',
+    name: 'Time offset format',
+    description: 'Date format applied to any offset time ranges',
     category: ['Tooltip'],
     defaultValue: '',
     settings: {
