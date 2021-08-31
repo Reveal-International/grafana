@@ -78,12 +78,6 @@ export interface FieldConfig<TOptions extends object = any> {
   // Used when reducing field values
   nullValueMode?: NullValueMode;
 
-  // Is there a time offset applied to this field?
-  timeOffset?: number;
-
-  // Time offset label to apply
-  timeOffsetLabel?: string;
-
   // The behavior when clicking on a result
   links?: DataLink[];
 

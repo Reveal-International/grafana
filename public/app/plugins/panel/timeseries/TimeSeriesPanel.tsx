@@ -57,7 +57,6 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
               <TooltipPlugin
                 data={alignedDataFrame}
                 config={config}
-                timeOffsetFormat={options.tooltip.timeOffsetFormat}
                 mode={options.tooltip.mode}
                 sync={sync}
                 timeZone={timeZone}

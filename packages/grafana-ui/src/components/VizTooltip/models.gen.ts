@@ -17,5 +17,4 @@ export enum TooltipDisplayMode {
  */
 export type VizTooltipOptions = {
   mode: TooltipDisplayMode;
-  timeOffsetFormat?: string;
 };
