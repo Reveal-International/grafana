@@ -11,8 +11,15 @@ export function PopulationPanel(props: PanelProps<PopulationPanelOptions>) {
   // Recalculate as appropriate
   React.useEffect(() => {
     // Make backend ajax call
+    if (!options.populationZone) {
+      setPopulation({ numeric: 0, text: 'No Zone' });
+      return;
+    }
     getBackendSrv()
-      .get('/avenge/api/_/population/' + options.populationZone)
+      .request({
+        url: '/avenge/api/_/population/' + options.populationZone,
+        showErrorAlert: false,
+      })
       .then((r) => {
         // eslint-disable-next-line no-console
         console.debug('Population response', r);
@@ -31,6 +38,10 @@ export function PopulationPanel(props: PanelProps<PopulationPanelOptions>) {
         pop.title = props.fieldConfig.defaults.displayName;
         // Set the state
         setPopulation(pop);
+      })
+      .catch((error) => {
+        console.error('Population error:', error);
+        setPopulation({ numeric: 0, text: 'Zone Error' });
       });
   }, [props.data, props.timeRange, props.options, props.fieldConfig, props.timeZone, options.populationZone]);
   // Render a big value
