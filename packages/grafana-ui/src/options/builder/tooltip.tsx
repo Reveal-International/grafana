@@ -26,4 +26,15 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
       options,
     },
   });
+
+  builder.addTextInput({
+    path: 'tooltip.timeFormat',
+    name: 'Time format',
+    description: 'Date/time format applied to any tool tips',
+    category: ['Tooltip'],
+    defaultValue: '',
+    settings: {
+      placeholder: 'DD-MM-YYYY HH:mm:ss',
+    },
+  });
 }
