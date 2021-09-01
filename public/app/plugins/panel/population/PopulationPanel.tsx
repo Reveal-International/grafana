@@ -43,7 +43,7 @@ export function PopulationPanel(props: PanelProps<PopulationPanelOptions>) {
         console.error('Population error:', error);
         setPopulation({ numeric: 0, text: 'Zone Error' });
       });
-  }, [props.data, props.timeRange, props.options, props.fieldConfig, props.timeZone, options.populationZone]);
+  }, [props.timeRange, props.options, props.fieldConfig, props.timeZone, options.populationZone]);
   // Render a big value
   return (
     <BigValue
