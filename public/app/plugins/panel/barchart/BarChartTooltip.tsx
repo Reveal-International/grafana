@@ -2,7 +2,6 @@ import {
   DataFrame,
   dateTimeFormat,
   FALLBACK_COLOR,
-  Field,
   FieldType,
   formattedValueToString,
   getDisplayProcessor,
@@ -14,7 +13,7 @@ import { RSeriesTable, RSeriesTableRowProps, TooltipDisplayMode, useTheme2, VizT
 import moment, { DurationInputArg2 } from 'moment';
 import React from 'react';
 
-export interface TimeSeriesTooltipProps {
+export interface BarChartTooltipProps {
   data: DataFrame[];
   alignedData: DataFrame;
   seriesIdx: number | null;
@@ -24,47 +23,62 @@ export interface TimeSeriesTooltipProps {
   tooltipOptions: VizTooltipOptions;
 }
 
-export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
+export function BarChartTooltip(props: BarChartTooltipProps) {
   const theme = useTheme2();
 
-  const formatDate = (field: Field, index: number, timeOffset?: string): string => {
-    let fieldValue = field.values.get(index!);
+  const dateRange = (timeOffset: string): string => {
+    let start = props.timeRange.from.valueOf();
+    let finish = props.timeRange.to.valueOf();
     if (timeOffset) {
       const parts = timeOffset.match(/^(\d+)([s|m|h|d|w|M|y])$/);
       if (parts?.length === 3) {
         const duration = moment.duration(parseInt(parts[1], 10), parts[2] as DurationInputArg2);
-        const newValue = moment(fieldValue).subtract(duration).valueOf();
-        // New time value
-        fieldValue = newValue;
+        start = moment(start).subtract(duration).valueOf();
+        finish = moment(finish).subtract(duration).valueOf();
       }
     }
-    return dateTimeFormat(fieldValue, {
+    const startStr = dateTimeFormat(start, {
       format: props.tooltipOptions.timeFormat,
       timeZone: props.timeZone,
     });
+    const finishStr = dateTimeFormat(finish, {
+      format: props.tooltipOptions.timeFormat,
+      timeZone: props.timeZone,
+    });
+    // TODO maybe more styly?
+    const range = startStr + ' to ' + finishStr;
+    return range;
   };
 
-  if (props.tooltipOptions.mode === TooltipDisplayMode.Single) {
-    const field = props.alignedData!.fields[props.seriesIdx!];
+  let xField = props.alignedData.fields[0];
+  if (!xField) {
+    return null;
+  }
+  const xFieldFmt = xField.display || getDisplayProcessor({ field: xField, timeZone: props.timeZone, theme });
+  const xVal = xFieldFmt(xField!.values.get(props.datapointIdx!)).text;
+
+  if (props.tooltipOptions.mode === TooltipDisplayMode.Single && props.seriesIdx !== null) {
+    const field = props.alignedData.fields[props.seriesIdx];
+
     if (!field) {
       return null;
     }
-    const xField = props.alignedData.fields[0]; // assumption first field is time..
-    const xFieldFormatted = formatDate(xField, props.datapointIdx!, field.config.timeOffset);
 
     const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
     const display = fieldFmt(field.values.get(props.datapointIdx!));
+    const offset = fieldFmt(field.config.timeOffset).text;
 
     return (
       <RSeriesTable
         series={[
           {
             color: display.color || FALLBACK_COLOR,
-            label1: getFieldDisplayName(field, props.alignedData),
+            label1: dateRange(offset),
+            label2: getFieldDisplayName(field, props.alignedData),
             value: display ? formattedValueToString(display) : null,
           },
         ]}
-        title={xFieldFormatted}
+        title={xVal}
       />
     );
   } else if (props.tooltipOptions.mode === TooltipDisplayMode.Multi) {
@@ -85,21 +99,19 @@ export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
           continue;
         }
 
-        const xFieldFormatted = formatDate(xField, props.datapointIdx!, field.config.timeOffset);
-        const fieldValue = field.values.get(props.datapointIdx!);
-        const display = field.display!(fieldValue);
-        const displayName = getFieldDisplayName(field, frame);
-
+        const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
+        const display = fieldFmt(field.values.get(props.datapointIdx!));
+        const offset = fieldFmt(field.config.timeOffset).text;
         series.push({
           color: display.color || FALLBACK_COLOR,
-          label1: xFieldFormatted,
-          label2: displayName,
+          label1: dateRange(offset),
+          label2: getFieldDisplayName(field, frame),
           value: display ? formattedValueToString(display) : null,
-          isActive: true,
+          isActive: props.seriesIdx === i,
         });
       }
     }
-    return <RSeriesTable series={series} />;
+    return <RSeriesTable series={series} title={xVal} />;
   } else {
     return null;
   }

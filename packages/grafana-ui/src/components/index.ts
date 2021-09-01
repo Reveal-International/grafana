@@ -255,3 +255,6 @@ export { preparePlotFrame } from './GraphNG/utils';
 export { GraphNGLegendEvent } from './GraphNG/types';
 export * from './PanelChrome/types';
 export { EmotionPerfTest } from './ThemeDemos/EmotionPerfTest';
+
+// Reveal
+export * from './Reveal/RSeriesTable';

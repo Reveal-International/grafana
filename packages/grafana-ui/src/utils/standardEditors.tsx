@@ -206,6 +206,7 @@ export const getStandardFieldConfigs = () => {
 
     settings: {
       placeholder: 'e.g: 1d 3w 2M',
+      expandTemplateVars: true,
     },
     // ??? any optionsUi with no value
     shouldApply: () => true,
