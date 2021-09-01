@@ -12,6 +12,9 @@ export interface RSeriesTableRowProps {
   label1?: string;
   label2?: string;
   value?: string | GraphSeriesValue;
+  value1?: string | GraphSeriesValue;
+  value2?: string | GraphSeriesValue;
+  img?: React.ReactNode;
   isActive?: boolean;
 }
 
@@ -19,6 +22,10 @@ const getSeriesTableRowStyles = (theme: GrafanaTheme2) => {
   return {
     icon: css`
       margin-right: ${theme.spacing(1)};
+      vertical-align: middle;
+    `,
+    img: css`
+      margin-left: ${theme.spacing(1)};
       vertical-align: middle;
     `,
     seriesTable: css`
@@ -35,11 +42,17 @@ const getSeriesTableRowStyles = (theme: GrafanaTheme2) => {
       word-break: break-all;
     `,
     label2: css`
-      padding-left: ${theme.spacing(2)};
+      padding-left: ${theme.spacing(1)};
       word-break: break-all;
     `,
     value: css`
-      padding-left: ${theme.spacing(2)};
+      padding-left: ${theme.spacing(1)};
+    `,
+    value2: css`
+      padding-left: ${theme.spacing(1)};
+    `,
+    value3: css`
+      padding-left: ${theme.spacing(1)};
     `,
     activeSeries: css`
       font-weight: ${theme.typography.fontWeightBold};
@@ -55,7 +68,16 @@ const getSeriesTableRowStyles = (theme: GrafanaTheme2) => {
 /**
  * @public
  */
-export const RSeriesTableRow: React.FC<RSeriesTableRowProps> = ({ color, label1, label2, value, isActive }) => {
+export const RSeriesTableRow: React.FC<RSeriesTableRowProps> = ({
+  color,
+  label1,
+  label2,
+  value,
+  value1,
+  value2,
+  img,
+  isActive,
+}) => {
   const styles = useStyles2(getSeriesTableRowStyles);
 
   return (
@@ -68,6 +90,9 @@ export const RSeriesTableRow: React.FC<RSeriesTableRowProps> = ({ color, label1,
       {label1 && <div className={cx(styles.seriesTableCell, styles.label1)}>{label1}</div>}
       {label2 && <div className={cx(styles.seriesTableCell, styles.label2)}>{label2}</div>}
       {value && <div className={cx(styles.seriesTableCell, styles.value)}>{value}</div>}
+      {value1 && <div className={cx(styles.seriesTableCell, styles.value2)}>{value1}</div>}
+      {value2 && <div className={cx(styles.seriesTableCell, styles.value3)}>{value2}</div>}
+      {img && <div className={cx(styles.seriesTableCell, styles.img)}>{img}</div>}
     </div>
   );
 };
@@ -101,6 +126,9 @@ export const RSeriesTable: React.FC<RSeriesTableProps> = ({ title, series }) => 
             label2={s.label2}
             color={s.color}
             value={s.value}
+            value1={s.value1}
+            value2={s.value2}
+            img={s.img}
             key={`${i}`}
           />
         );

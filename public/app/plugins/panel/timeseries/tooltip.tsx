@@ -1,18 +1,22 @@
 import {
   DataFrame,
-  dateTimeFormat,
   FALLBACK_COLOR,
-  Field,
   FieldType,
   formattedValueToString,
   getDisplayProcessor,
   getFieldDisplayName,
   TimeRange,
 } from '@grafana/data';
-import { RSeriesTable, RSeriesTableRowProps, TooltipDisplayMode, useTheme2, VizTooltipOptions } from '@grafana/ui';
-/* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
-import moment, { DurationInputArg2 } from 'moment';
+import {
+  RSeriesTable,
+  RSeriesTableRowProps,
+  RSupport,
+  TooltipDisplayMode,
+  useTheme2,
+  VizTooltipOptions,
+} from '@grafana/ui';
 import React from 'react';
+import { TooltipExtension } from '@grafana/schema';
 
 export interface TimeSeriesTooltipProps {
   data: DataFrame[];
@@ -27,30 +31,20 @@ export interface TimeSeriesTooltipProps {
 export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
   const theme = useTheme2();
 
-  const formatDate = (field: Field, index: number, timeOffset?: string): string => {
-    let fieldValue = field.values.get(index!);
-    if (timeOffset) {
-      const parts = timeOffset.match(/^(\d+)([s|m|h|d|w|M|y])$/);
-      if (parts?.length === 3) {
-        const duration = moment.duration(parseInt(parts[1], 10), parts[2] as DurationInputArg2);
-        const newValue = moment(fieldValue).subtract(duration).valueOf();
-        // New time value
-        fieldValue = newValue;
-      }
-    }
-    return dateTimeFormat(fieldValue, {
-      format: props.tooltipOptions.timeFormat,
-      timeZone: props.timeZone,
-    });
-  };
-
   if (props.tooltipOptions.mode === TooltipDisplayMode.Single) {
     const field = props.alignedData!.fields[props.seriesIdx!];
     if (!field) {
       return null;
     }
     const xField = props.alignedData.fields[0]; // assumption first field is time..
-    const xFieldFormatted = formatDate(xField, props.datapointIdx!, field.config.timeOffset);
+    const xFieldValue = xField.values.get(props.datapointIdx!);
+    // Format date with any current field offset set!
+    const xFieldFormatted = RSupport.formatDate(
+      xFieldValue,
+      props.timeZone,
+      field.config.timeOffset,
+      props.tooltipOptions.dateFormat
+    );
 
     const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
     const display = fieldFmt(field.values.get(props.datapointIdx!));
@@ -69,6 +63,7 @@ export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
     );
   } else if (props.tooltipOptions.mode === TooltipDisplayMode.Multi) {
     let series: RSeriesTableRowProps[] = [];
+    let baseFieldValue = null;
     for (let i = 0; i < props.data.length; i++) {
       const frame = props.data[i];
       const xField = frame.fields[0];
@@ -85,17 +80,53 @@ export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
           continue;
         }
 
-        const xFieldFormatted = formatDate(xField, props.datapointIdx!, field.config.timeOffset);
+        const xFieldValue = xField.values.get(props.datapointIdx!);
+        // Format date with any current field offset set!
+        const xFieldFormatted = RSupport.formatDate(
+          xFieldValue,
+          props.timeZone,
+          field.config.timeOffset,
+          props.tooltipOptions.dateFormat
+        );
+
         const fieldValue = field.values.get(props.datapointIdx!);
+        const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
+        let delta = null;
+        let deltaPercent = null;
+        let trendImg = null;
+        if (baseFieldValue === null) {
+          baseFieldValue = fieldValue;
+        } else {
+          delta = fieldValue - baseFieldValue;
+          if (fieldValue === baseFieldValue) {
+            deltaPercent = '0%';
+            trendImg = <img src="public/img/icon_trending_flat.png"></img>;
+          } else if (fieldValue > baseFieldValue) {
+            trendImg = <img src="public/img/icon_trending_up.png"></img>;
+            deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+          } else {
+            trendImg = <img src="public/img/icon_trending_down.png"></img>;
+            deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+          }
+        }
+
         const display = field.display!(fieldValue);
         const displayName = getFieldDisplayName(field, frame);
+        const deltaDisplay = fieldFmt(delta);
+        let deltaString = formattedValueToString(deltaDisplay);
+        if (delta && delta > 0) {
+          deltaString = '+' + deltaString;
+        }
 
         series.push({
           color: display.color || FALLBACK_COLOR,
           label1: xFieldFormatted,
           label2: displayName,
           value: display ? formattedValueToString(display) : null,
-          isActive: true,
+          value1: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaNumeric) ? deltaString : undefined,
+          value2: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaPercent) ? deltaPercent : undefined,
+          img: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaTrend) ? trendImg : undefined,
+          isActive: i === props.seriesIdx,
         });
       }
     }

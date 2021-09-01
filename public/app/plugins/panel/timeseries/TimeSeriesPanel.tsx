@@ -1,6 +1,7 @@
 import { DataFrame, Field, PanelProps } from '@grafana/data';
 import { config } from '@grafana/runtime';
-import { usePanelContext, TimeSeries, TooltipPlugin, ZoomPlugin, TooltipDisplayMode } from '@grafana/ui';
+import { TooltipDisplayMode, TooltipExtension } from '@grafana/schema';
+import { usePanelContext, TimeSeries, TooltipPlugin, ZoomPlugin } from '@grafana/ui';
 import { getFieldLinksForExplore } from 'app/features/explore/utils/links';
 import React, { useCallback, useMemo } from 'react';
 import { AnnotationsPlugin } from './plugins/AnnotationsPlugin';
@@ -9,7 +10,7 @@ import { ExemplarsPlugin } from './plugins/ExemplarsPlugin';
 import { TimeSeriesOptions } from './types';
 import { prepareGraphableFields } from './utils';
 import { AnnotationEditorPlugin } from './plugins/AnnotationEditorPlugin';
-import { TimeSeriesTooltip } from './TimeSeriesTooltip';
+import { TimeSeriesTooltip } from './tooltip';
 
 interface TimeSeriesPanelProps extends PanelProps<TimeSeriesOptions> {}
 
@@ -31,7 +32,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
 
   const { frames, warn } = useMemo(() => prepareGraphableFields(data?.series, config.theme2), [data]);
 
-  const renderCustomTooltip = useCallback(
+  const extensionTooltipRender = useCallback(
     (alignedData: DataFrame, seriesIdx: number | null, datapointIdx: number | null) => {
       return (
         <TimeSeriesTooltip
@@ -49,9 +50,9 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
   );
 
   // Whether to use our special tooltip if we have a time offset format
-  const ourRender = useMemo(() => {
-    return options.tooltip.timeFormat;
-  }, [options.tooltip.timeFormat]);
+  const useExtensionTooltipRender = useMemo(() => {
+    return options.tooltip.extensions?.includes(TooltipExtension.DateOffset);
+  }, [options.tooltip.extensions]);
 
   if (!frames || warn) {
     return (
@@ -82,7 +83,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
                 config={config}
                 mode={options.tooltip.mode}
                 sync={sync}
-                renderTooltip={ourRender ? renderCustomTooltip : undefined}
+                renderTooltip={useExtensionTooltipRender ? extensionTooltipRender : undefined}
                 timeZone={timeZone}
               />
             )}

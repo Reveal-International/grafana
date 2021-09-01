@@ -258,3 +258,4 @@ export { EmotionPerfTest } from './ThemeDemos/EmotionPerfTest';
 
 // Reveal
 export * from './Reveal/RSeriesTable';
+export * from './Reveal/RSupport';

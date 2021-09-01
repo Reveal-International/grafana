@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
-import { TooltipDisplayMode, StackingMode } from '@grafana/schema';
+import { TooltipDisplayMode, StackingMode, TooltipExtension } from '@grafana/schema';
 import { DataFrame, PanelProps, TimeRange, VizOrientation } from '@grafana/data';
 import { TooltipPlugin, useTheme2 } from '@grafana/ui';
 import { BarChartOptions } from './types';
 import { BarChart } from './BarChart';
 import { prepareGraphableFrames } from './utils';
-import { BarChartTooltip } from './BarChartTooltip';
+import { ExtensionTooltipRender } from './tooltip';
 
 interface Props extends PanelProps<BarChartOptions> {}
 
@@ -43,10 +43,10 @@ export const BarChartPanel: React.FunctionComponent<Props> = ({
     return options.tooltip;
   }, [options.tooltip, options.stacking]);
 
-  const renderCustomTooltip = useCallback(
+  const extensionTooltipRender = useCallback(
     (alignedData: DataFrame, seriesIdx: number | null, datapointIdx: number | null) => {
       return (
-        <BarChartTooltip
+        <ExtensionTooltipRender
           data={frames!}
           alignedData={alignedData}
           seriesIdx={seriesIdx}
@@ -60,10 +60,10 @@ export const BarChartPanel: React.FunctionComponent<Props> = ({
     [frames, options.tooltip, timeRange, timeZone]
   );
 
-  // Whether to use our special tooltip if we have a time offset format
-  const ourRender = useMemo(() => {
-    return options.tooltip.timeFormat;
-  }, [options.tooltip.timeFormat]);
+  // Whether to use our extension tooltip render
+  const useExtensionTooltipRender = useMemo(() => {
+    return options.tooltip.extensions?.includes(TooltipExtension.DateOffset);
+  }, [options.tooltip.extensions]);
 
   if (!frames || warn) {
     return (
@@ -91,7 +91,7 @@ export const BarChartPanel: React.FunctionComponent<Props> = ({
             config={config}
             mode={tooltip.mode}
             timeZone={timeZone}
-            renderTooltip={ourRender ? renderCustomTooltip : undefined}
+            renderTooltip={useExtensionTooltipRender ? extensionTooltipRender : undefined}
           />
         );
       }}

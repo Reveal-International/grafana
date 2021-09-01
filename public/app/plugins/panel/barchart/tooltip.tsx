@@ -1,6 +1,5 @@
 import {
   DataFrame,
-  dateTimeFormat,
   FALLBACK_COLOR,
   FieldType,
   formattedValueToString,
@@ -8,12 +7,18 @@ import {
   getFieldDisplayName,
   TimeRange,
 } from '@grafana/data';
-import { RSeriesTable, RSeriesTableRowProps, TooltipDisplayMode, useTheme2, VizTooltipOptions } from '@grafana/ui';
-/* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
-import moment, { DurationInputArg2 } from 'moment';
+import {
+  RSeriesTable,
+  RSeriesTableRowProps,
+  RSupport,
+  TooltipDisplayMode,
+  useTheme2,
+  VizTooltipOptions,
+} from '@grafana/ui';
 import React from 'react';
+import { TooltipExtension } from '@grafana/schema';
 
-export interface BarChartTooltipProps {
+export interface ExtensionTooltipRenderProps {
   data: DataFrame[];
   alignedData: DataFrame;
   seriesIdx: number | null;
@@ -23,32 +28,8 @@ export interface BarChartTooltipProps {
   tooltipOptions: VizTooltipOptions;
 }
 
-export function BarChartTooltip(props: BarChartTooltipProps) {
+export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
   const theme = useTheme2();
-
-  const dateRange = (timeOffset: string): string => {
-    let start = props.timeRange.from.valueOf();
-    let finish = props.timeRange.to.valueOf();
-    if (timeOffset) {
-      const parts = timeOffset.match(/^(\d+)([s|m|h|d|w|M|y])$/);
-      if (parts?.length === 3) {
-        const duration = moment.duration(parseInt(parts[1], 10), parts[2] as DurationInputArg2);
-        start = moment(start).subtract(duration).valueOf();
-        finish = moment(finish).subtract(duration).valueOf();
-      }
-    }
-    const startStr = dateTimeFormat(start, {
-      format: props.tooltipOptions.timeFormat,
-      timeZone: props.timeZone,
-    });
-    const finishStr = dateTimeFormat(finish, {
-      format: props.tooltipOptions.timeFormat,
-      timeZone: props.timeZone,
-    });
-    // TODO maybe more styly?
-    const range = startStr + ' to ' + finishStr;
-    return range;
-  };
 
   let xField = props.alignedData.fields[0];
   if (!xField) {
@@ -73,7 +54,7 @@ export function BarChartTooltip(props: BarChartTooltipProps) {
         series={[
           {
             color: display.color || FALLBACK_COLOR,
-            label1: dateRange(offset),
+            label1: RSupport.formatDateRange(props.timeRange, props.timeZone, offset, props.tooltipOptions.dateFormat),
             label2: getFieldDisplayName(field, props.alignedData),
             value: display ? formattedValueToString(display) : null,
           },
@@ -86,6 +67,7 @@ export function BarChartTooltip(props: BarChartTooltipProps) {
     for (let i = 0; i < props.data.length; i++) {
       const frame = props.data[i];
       const xField = frame.fields[0];
+      let baseFieldValue = null;
       for (let f = 1; f < frame.fields.length; f++) {
         const field = frame.fields[f];
         if (
@@ -100,13 +82,40 @@ export function BarChartTooltip(props: BarChartTooltipProps) {
         }
 
         const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
-        const display = fieldFmt(field.values.get(props.datapointIdx!));
+        const fieldValue = field.values.get(props.datapointIdx!) as number;
+        let delta = null;
+        let deltaPercent = null;
+        let trendImg = null;
+        if (baseFieldValue === null) {
+          baseFieldValue = fieldValue;
+        } else {
+          delta = fieldValue - baseFieldValue;
+          if (fieldValue === baseFieldValue) {
+            deltaPercent = '0%';
+            trendImg = <img src="public/img/icon_trending_flat.png"></img>;
+          } else if (fieldValue > baseFieldValue) {
+            trendImg = <img src="public/img/icon_trending_up.png"></img>;
+            deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+          } else {
+            trendImg = <img src="public/img/icon_trending_down.png"></img>;
+            deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+          }
+        }
+        const display = fieldFmt(fieldValue);
         const offset = fieldFmt(field.config.timeOffset).text;
+        const deltaDisplay = fieldFmt(delta);
+        let deltaString = formattedValueToString(deltaDisplay);
+        if (delta && delta > 0) {
+          deltaString = '+' + deltaString;
+        }
         series.push({
           color: display.color || FALLBACK_COLOR,
-          label1: dateRange(offset),
+          label1: RSupport.formatDateRange(props.timeRange, props.timeZone, offset, props.tooltipOptions.dateFormat),
           label2: getFieldDisplayName(field, frame),
           value: display ? formattedValueToString(display) : null,
+          value1: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaNumeric) ? deltaString : undefined,
+          value2: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaPercent) ? deltaPercent : undefined,
+          img: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaTrend) ? trendImg : undefined,
           isActive: props.seriesIdx === i,
         });
       }
