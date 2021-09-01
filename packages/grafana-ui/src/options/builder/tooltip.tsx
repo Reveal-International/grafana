@@ -35,6 +35,7 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
     defaultValue: '',
     settings: {
       placeholder: 'DD-MM-YYYY HH:mm:ss',
+      expandTemplateVars: true,
     },
   });
 }
