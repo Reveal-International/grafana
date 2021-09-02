@@ -8,6 +8,7 @@ import {
   TimeRange,
 } from '@grafana/data';
 import {
+  DeltaCalculation,
   RSeriesTable,
   RSeriesTableRowProps,
   RSupport,
@@ -83,47 +84,26 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
 
         const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
         const fieldValue = field.values.get(props.datapointIdx!) as number;
-        let delta = null;
-        let deltaPercent = null;
-        let trendImg = null;
+        let delta = {} as DeltaCalculation;
         if (baseFieldValue === null) {
           baseFieldValue = fieldValue;
         } else {
-          delta = fieldValue - baseFieldValue;
-          if (fieldValue === baseFieldValue) {
-            deltaPercent = '0%';
-            trendImg = <img src="public/img/icon_trending_flat.png"></img>;
-          } else if (fieldValue > baseFieldValue) {
-            trendImg = <img src="public/img/icon_trending_up.png"></img>;
-            if (baseFieldValue) {
-              deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
-            } else {
-              deltaPercent = '+100%';
-            }
-          } else {
-            trendImg = <img src="public/img/icon_trending_down.png"></img>;
-            if (baseFieldValue) {
-              deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
-            } else {
-              deltaPercent = '-100%';
-            }
-          }
+          delta = RSupport.calculateDelta(fieldFmt, baseFieldValue, fieldValue);
         }
         const display = fieldFmt(fieldValue);
         const offset = fieldFmt(field.config.timeOffset).text;
-        const deltaDisplay = fieldFmt(delta);
-        let deltaString = formattedValueToString(deltaDisplay);
-        if (delta && delta > 0) {
-          deltaString = '+' + deltaString;
-        }
         series.push({
           color: display.color || FALLBACK_COLOR,
           label1: RSupport.formatDateRange(props.timeRange, props.timeZone, offset, props.tooltipOptions.dateFormat),
           label2: getFieldDisplayName(field, frame),
           value: display ? formattedValueToString(display) : null,
-          value1: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaNumeric) ? deltaString : undefined,
-          value2: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaPercent) ? deltaPercent : undefined,
-          img: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaTrend) ? trendImg : undefined,
+          value1: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaNumeric)
+            ? delta.deltaString
+            : undefined,
+          value2: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaPercent)
+            ? delta.percentString
+            : undefined,
+          img: props.tooltipOptions.extensions?.includes(TooltipExtension.DeltaTrend) ? delta.trendImg : undefined,
           isActive: props.seriesIdx === i,
         });
       }

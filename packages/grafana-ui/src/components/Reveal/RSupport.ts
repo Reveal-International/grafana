@@ -1,11 +1,51 @@
 /* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
 import moment, { DurationInputArg2 } from 'moment';
-import { dateTimeFormat, TimeRange } from '@grafana/data';
+import { dateTimeFormat, DisplayProcessor, formattedValueToString, TimeRange } from '@grafana/data';
+import React from 'react';
+
+export interface DeltaCalculation {
+  percent: number;
+  percentString: string;
+  delta: number;
+  deltaString: string;
+  trendImg: React.ReactNode;
+}
 
 /**
  * Generic Reveal support class with some useful functions.
  **/
 export const RSupport = {
+  calculateDelta(displayProcessor: DisplayProcessor, baseFieldValue: number, fieldValue: number): DeltaCalculation {
+    let calc = {} as DeltaCalculation;
+    calc.delta = fieldValue - baseFieldValue;
+    if (fieldValue === baseFieldValue) {
+      calc.percentString = '0%';
+      calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_flat.png' });
+    } else if (fieldValue > baseFieldValue) {
+      calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_up.png' });
+      if (baseFieldValue) {
+        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+        calc.percentString = '+' + calc.percent + '%';
+      } else {
+        calc.percentString = '+100%';
+      }
+    } else {
+      calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_down.png' });
+      if (baseFieldValue) {
+        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+        calc.percentString = calc.percent + '%';
+      } else {
+        calc.percentString = '-100%';
+      }
+    }
+    const deltaDisplay = displayProcessor(calc.delta);
+    calc.deltaString = formattedValueToString(deltaDisplay);
+    if (calc.delta && calc.delta > 0) {
+      calc.deltaString = '+' + calc.deltaString;
+    }
+    return calc;
+  },
+
   /**
    * Returns a string representing the date; applying the offset if specified.
    * @param date
