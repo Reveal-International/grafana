@@ -6,6 +6,6 @@ TooltipExtension: "date-offset" | "delta-numeric" | "delta-percent" | "delta-tre
 
 VizTooltipOptions: {
 	mode: TooltipDisplayMode
-	extensions?: TooltipExtension[]
+  extensions?: [TooltipExtension]
 	dateFormat?: string
 } @cuetsy(kind="interface")
