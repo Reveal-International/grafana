@@ -14,12 +14,14 @@ import { AxisPlacement } from './config';
 import { VizLayout, VizLayoutLegendProps } from '../VizLayout/VizLayout';
 import { VizLegend } from '../VizLegend/VizLegend';
 import { useTheme2 } from '../../themes';
+import { PlotLegendLabelResolver } from './types';
 
 const defaultFormatter = (v: any) => (v == null ? '-' : v.toFixed(1));
 
 interface PlotLegendProps extends VizLegendOptions, Omit<VizLayoutLegendProps, 'children'> {
   data: DataFrame[];
   config: UPlotConfigBuilder;
+  labelResolver?: PlotLegendLabelResolver;
 }
 
 export const PlotLegend: React.FC<PlotLegendProps> = ({
@@ -27,6 +29,7 @@ export const PlotLegend: React.FC<PlotLegendProps> = ({
   config,
   placement,
   calcs,
+  labelResolver,
   displayMode,
   ...vizLayoutLegendProps
 }) => {
@@ -48,7 +51,9 @@ export const PlotLegend: React.FC<PlotLegendProps> = ({
         return undefined;
       }
 
-      const label = getFieldDisplayName(field, data[fieldIndex.frameIndex]!, data);
+      const label = labelResolver
+        ? labelResolver(field, data[fieldIndex.frameIndex]!, data)
+        : getFieldDisplayName(field, data[fieldIndex.frameIndex]!, data);
       const scaleColor = getFieldSeriesColor(field, theme);
       const seriesColor = scaleColor.color;
 

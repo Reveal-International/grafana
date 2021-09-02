@@ -95,10 +95,18 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
             trendImg = <img src="public/img/icon_trending_flat.png"></img>;
           } else if (fieldValue > baseFieldValue) {
             trendImg = <img src="public/img/icon_trending_up.png"></img>;
-            deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            if (baseFieldValue) {
+              deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            } else {
+              deltaPercent = '+100%';
+            }
           } else {
             trendImg = <img src="public/img/icon_trending_down.png"></img>;
-            deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            if (baseFieldValue) {
+              deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            } else {
+              deltaPercent = '-100%';
+            }
           }
         }
         const display = fieldFmt(fieldValue);

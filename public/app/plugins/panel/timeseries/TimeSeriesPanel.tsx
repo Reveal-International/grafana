@@ -1,7 +1,7 @@
-import { DataFrame, Field, PanelProps } from '@grafana/data';
+import { DataFrame, Field, getDisplayProcessor, getFieldDisplayName, PanelProps } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { TooltipDisplayMode, TooltipExtension } from '@grafana/schema';
-import { usePanelContext, TimeSeries, TooltipPlugin, ZoomPlugin } from '@grafana/ui';
+import { usePanelContext, TimeSeries, TooltipPlugin, ZoomPlugin, RSupport, useTheme2 } from '@grafana/ui';
 import { getFieldLinksForExplore } from 'app/features/explore/utils/links';
 import React, { useCallback, useMemo } from 'react';
 import { AnnotationsPlugin } from './plugins/AnnotationsPlugin';
@@ -10,7 +10,7 @@ import { ExemplarsPlugin } from './plugins/ExemplarsPlugin';
 import { TimeSeriesOptions } from './types';
 import { prepareGraphableFields } from './utils';
 import { AnnotationEditorPlugin } from './plugins/AnnotationEditorPlugin';
-import { TimeSeriesTooltip } from './tooltip';
+import { ExtensionTooltipRender } from './tooltip';
 
 interface TimeSeriesPanelProps extends PanelProps<TimeSeriesOptions> {}
 
@@ -26,6 +26,8 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
 }) => {
   const { sync, canAddAnnotations } = usePanelContext();
 
+  const theme = useTheme2();
+
   const getFieldLinks = (field: Field, rowIndex: number) => {
     return getFieldLinksForExplore({ field, rowIndex, range: timeRange });
   };
@@ -35,7 +37,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
   const extensionTooltipRender = useCallback(
     (alignedData: DataFrame, seriesIdx: number | null, datapointIdx: number | null) => {
       return (
-        <TimeSeriesTooltip
+        <ExtensionTooltipRender
           data={frames ?? []}
           alignedData={alignedData}
           seriesIdx={seriesIdx}
@@ -54,6 +56,18 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
     return options.tooltip.extensions?.includes(TooltipExtension.DateOffset);
   }, [options.tooltip.extensions]);
 
+  const extensionLegendLabelResolver = (field: Field, value: any, data: DataFrame[]) => {
+    const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: timeZone, theme });
+    const offset = fieldFmt(field.config.timeOffset).text;
+    const defaultLabel = getFieldDisplayName(field, value, data);
+    return defaultLabel + ' ' + RSupport.formatDateRange(timeRange, timeZone, offset, options.legend.dateFormat);
+  };
+
+  // Whether to use our special legend resolver if we have a time offset format
+  const useExtensionLegendLabelResolver = useMemo(() => {
+    return options.legend.dateFormat;
+  }, [options.legend.dateFormat]);
+
   if (!frames || warn) {
     return (
       <div className="panel-empty">
@@ -71,6 +85,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
       timeZone={timeZone}
       width={width}
       height={height}
+      legendLabelResolver={useExtensionLegendLabelResolver ? extensionLegendLabelResolver : undefined}
       legend={options.legend}
     >
       {(config, alignedDataFrame) => {

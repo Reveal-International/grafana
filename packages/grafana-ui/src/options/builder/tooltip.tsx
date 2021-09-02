@@ -45,12 +45,12 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
 
   builder.addTextInput({
     path: 'tooltip.dateFormat',
-    name: 'Tooltip Date Range Time format',
-    description: 'Date/time format applied to any date range tool tips',
+    name: 'Tooltip Extension Date Range Time format',
+    description: 'Date/time format applied to any extension tool tips',
     category: ['Tooltip'],
     defaultValue: 'DD-MM-YYYY',
     settings: {
-      placeholder: 'DD-MM-YYYY HH:mm:ss',
+      placeholder: 'DD-MM-YYYY',
       expandTemplateVars: true,
     },
     showIf: (c, data) => {

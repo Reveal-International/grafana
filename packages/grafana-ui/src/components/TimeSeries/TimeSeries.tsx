@@ -29,7 +29,7 @@ export class UnthemedTimeSeries extends React.Component<TimeSeriesProps> {
       return null;
     }
 
-    return <PlotLegend data={frames} config={config} {...legend} />;
+    return <PlotLegend data={frames} labelResolver={this.props.legendLabelResolver} config={config} {...legend} />;
   };
 
   render() {

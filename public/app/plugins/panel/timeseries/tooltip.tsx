@@ -18,7 +18,7 @@ import {
 import React from 'react';
 import { TooltipExtension } from '@grafana/schema';
 
-export interface TimeSeriesTooltipProps {
+export interface ExtensionTooltipRenderProps {
   data: DataFrame[];
   alignedData: DataFrame;
   seriesIdx: number | null;
@@ -28,7 +28,7 @@ export interface TimeSeriesTooltipProps {
   tooltipOptions: VizTooltipOptions;
 }
 
-export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
+export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
   const theme = useTheme2();
 
   if (props.tooltipOptions.mode === TooltipDisplayMode.Single) {
@@ -103,10 +103,18 @@ export function TimeSeriesTooltip(props: TimeSeriesTooltipProps) {
             trendImg = <img src="public/img/icon_trending_flat.png"></img>;
           } else if (fieldValue > baseFieldValue) {
             trendImg = <img src="public/img/icon_trending_up.png"></img>;
-            deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            if (baseFieldValue) {
+              deltaPercent = '+' + Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            } else {
+              deltaPercent = '+100%';
+            }
           } else {
             trendImg = <img src="public/img/icon_trending_down.png"></img>;
-            deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            if (baseFieldValue) {
+              deltaPercent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue) + '%';
+            } else {
+              deltaPercent = '-100%';
+            }
           }
         }
 

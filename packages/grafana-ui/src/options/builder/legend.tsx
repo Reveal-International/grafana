@@ -37,6 +37,17 @@ export function addLegendOptions<T extends OptionsWithLegend>(
         ],
       },
       showIf: (c) => c.legend.displayMode !== LegendDisplayMode.Hidden,
+    })
+    .addTextInput({
+      path: 'legend.dateFormat',
+      name: 'Legend Extension Date Range Time format',
+      description: 'Date/time format applied to each to each legend',
+      category: ['Legend'],
+      defaultValue: '',
+      settings: {
+        placeholder: 'DD-MM-YYYY',
+        expandTemplateVars: true,
+      },
     });
 
   if (includeLegendCalcs) {
