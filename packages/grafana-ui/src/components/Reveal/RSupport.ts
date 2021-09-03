@@ -1,9 +1,13 @@
 /* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
 import moment, { DurationInputArg2 } from 'moment';
-import { dateTimeFormat, DisplayProcessor, formattedValueToString, TimeRange } from '@grafana/data';
+import { DataFrame, dateTimeFormat, DisplayProcessor, Field, formattedValueToString, TimeRange } from '@grafana/data';
 import React from 'react';
 
 export interface DeltaCalculation {
+  baseValue: number;
+  baseValueString: string;
+  fieldValue: number;
+  fieldValueString: string;
   percent: number;
   percentString: string;
   delta: number;
@@ -15,8 +19,47 @@ export interface DeltaCalculation {
  * Generic Reveal support class with some useful functions.
  **/
 export const RSupport = {
-  calculateDelta(displayProcessor: DisplayProcessor, baseFieldValue: number, fieldValue: number): DeltaCalculation {
+  calculateFieldDelta(
+    displayProcessor: DisplayProcessor,
+    frames: DataFrame[],
+    field: Field,
+    dataPointIndex: number
+  ): DeltaCalculation {
+    const fieldValue = field.values.get(dataPointIndex);
     let calc = {} as DeltaCalculation;
+    calc.fieldValue = fieldValue;
+    calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
+    // Does it have the time offset this field is relative to?
+    if (!field.config.timeOffsetRelativeTo) {
+      return calc;
+    }
+    // Find field that has timeOffset that we are relative to.
+    let baseField;
+    for (let i = 0; i < frames.length; i++) {
+      const frame = frames[i];
+      baseField = frame.fields.find((f) => f.config.timeOffset?.trim() === field.config.timeOffsetRelativeTo?.trim());
+      if (baseField) {
+        break;
+      }
+    }
+    if (!baseField) {
+      console.warn('Could not find series with time offset ' + field.config.timeOffsetRelativeTo, frames);
+      return calc;
+    }
+    // Now do calculation relative to our target field.
+    return this.calculateDeltaValue(displayProcessor, baseField.values.get(dataPointIndex), fieldValue);
+  },
+
+  calculateDeltaValue(
+    displayProcessor: DisplayProcessor,
+    baseFieldValue: number,
+    fieldValue: number
+  ): DeltaCalculation {
+    let calc = {} as DeltaCalculation;
+    calc.baseValue = baseFieldValue;
+    calc.baseValueString = formattedValueToString(displayProcessor(calc.baseValue));
+    calc.fieldValue = fieldValue;
+    calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
     calc.delta = fieldValue - baseFieldValue;
     if (fieldValue === baseFieldValue) {
       calc.percentString = '0%';
@@ -55,7 +98,7 @@ export const RSupport = {
    */
   formatDate(date: any, timeZone: string, timeOffset?: string, timeFormat?: string) {
     if (timeOffset) {
-      const parts = timeOffset.match(/^(\d+)([s|m|h|d|w|M|y])$/);
+      const parts = timeOffset.trim().match(/^(\d+)([s|m|h|d|w|M|y])$/);
       if (parts?.length === 3) {
         const duration = moment.duration(parseInt(parts[1], 10), parts[2] as DurationInputArg2);
         date = moment(date).subtract(duration).valueOf();
@@ -78,7 +121,7 @@ export const RSupport = {
     let start = timeRange.from.valueOf();
     let finish = timeRange.to.valueOf();
     if (timeOffset) {
-      const parts = timeOffset.match(/^(\d+)([s|m|h|d|w|M|y])$/);
+      const parts = timeOffset.trim().match(/^(\d+)([s|m|h|d|w|M|y])$/);
       if (parts?.length === 3) {
         const duration = moment.duration(parseInt(parts[1], 10), parts[2] as DurationInputArg2);
         start = moment(start).subtract(duration).valueOf();

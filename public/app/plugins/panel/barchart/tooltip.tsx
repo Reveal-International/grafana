@@ -8,7 +8,6 @@ import {
   TimeRange,
 } from '@grafana/data';
 import {
-  DeltaCalculation,
   RSeriesTable,
   RSeriesTableRowProps,
   RSupport,
@@ -68,7 +67,6 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
     for (let i = 0; i < props.data.length; i++) {
       const frame = props.data[i];
       const xField = frame.fields[0];
-      let baseFieldValue = null;
       for (let f = 1; f < frame.fields.length; f++) {
         const field = frame.fields[f];
         if (
@@ -84,12 +82,7 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
 
         const fieldFmt = field.display || getDisplayProcessor({ field, timeZone: props.timeZone, theme });
         const fieldValue = field.values.get(props.datapointIdx!) as number;
-        let delta = {} as DeltaCalculation;
-        if (baseFieldValue === null) {
-          baseFieldValue = fieldValue;
-        } else {
-          delta = RSupport.calculateDelta(fieldFmt, baseFieldValue, fieldValue);
-        }
+        const delta = RSupport.calculateFieldDelta(fieldFmt, props.data, field, props.datapointIdx!);
         const display = fieldFmt(fieldValue);
         const offset = fieldFmt(field.config.timeOffset).text;
         series.push({
