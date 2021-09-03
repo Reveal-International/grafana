@@ -67,5 +67,5 @@ func (a *AvengeServer) Handler(c *models.ReqContext) {
 	}
 	// This does all the heavy lifting for reverse proxying..
 	proxy := &httputil.ReverseProxy{Director: director}
-	proxy.ServeHTTP(c.Resp, c.Req.Request)
+	proxy.ServeHTTP(c.Resp, c.Req)
 }
