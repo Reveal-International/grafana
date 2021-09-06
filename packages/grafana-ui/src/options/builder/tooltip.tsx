@@ -1,4 +1,4 @@
-import { OptionsWithTooltip, TooltipExtension } from '@grafana/schema';
+import { OptionsWithTooltip, TooltipExtension } from '@grafana/ui';
 import { PanelOptionsEditorBuilder } from '@grafana/data';
 
 export function addTooltipOptions<T extends OptionsWithTooltip>(

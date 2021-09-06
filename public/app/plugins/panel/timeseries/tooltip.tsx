@@ -16,7 +16,7 @@ import {
   VizTooltipOptions,
 } from '@grafana/ui';
 import React from 'react';
-import { TooltipExtension } from '@grafana/schema';
+import { TooltipExtension } from '@grafana/ui';
 
 export interface ExtensionTooltipRenderProps {
   data: DataFrame[];
