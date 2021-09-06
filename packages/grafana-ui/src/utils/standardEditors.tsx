@@ -194,6 +194,44 @@ export const getStandardFieldConfigs = () => {
     category,
   };
 
+  const timeOffset: FieldConfigPropertyItem<any, string, StringFieldConfigSettings> = {
+    id: 'timeOffset',
+    path: 'timeOffset',
+    name: 'Time Offset',
+    description: 'Time offset applied to field (series)',
+
+    editor: standardEditorsRegistry.get('text').editor as any,
+    override: standardEditorsRegistry.get('text').editor as any,
+    process: stringOverrideProcessor,
+
+    settings: {
+      placeholder: 'e.g: 1d 3w 2M',
+      expandTemplateVars: true,
+    },
+    // ??? any optionsUi with no value
+    shouldApply: () => true,
+    category,
+  };
+
+  const timeOffsetRelativeTo: FieldConfigPropertyItem<any, string, StringFieldConfigSettings> = {
+    id: 'timeOffsetRelativeTo',
+    path: 'timeOffsetRelativeTo',
+    name: 'Time Offset Relative To',
+    description: 'Any delta calculations are against the series with this time offset',
+
+    editor: standardEditorsRegistry.get('text').editor as any,
+    override: standardEditorsRegistry.get('text').editor as any,
+    process: stringOverrideProcessor,
+
+    settings: {
+      placeholder: 'e.g: 1d 3w 2M',
+      expandTemplateVars: true,
+    },
+    // ??? any optionsUi with no value
+    shouldApply: () => true,
+    category,
+  };
+
   const links: FieldConfigPropertyItem<any, DataLink[], StringFieldConfigSettings> = {
     id: 'links',
     path: 'links',
@@ -224,7 +262,20 @@ export const getStandardFieldConfigs = () => {
     category,
   };
 
-  return [unit, min, max, decimals, displayName, color, noValue, thresholds, mappings, links];
+  return [
+    unit,
+    min,
+    max,
+    decimals,
+    displayName,
+    timeOffset,
+    timeOffsetRelativeTo,
+    color,
+    noValue,
+    thresholds,
+    mappings,
+    links,
+  ];
 };
 
 /**

@@ -6,6 +6,7 @@ LegendDisplayMode: "list" | "table" | "hidden" @cuetsy(targetType="enum")
 VizLegendOptions: {
     displayMode: LegendDisplayMode
     placement: LegendPlacement
+    dateFormat?:  string
     calcs: [...string]
 } @cuetsy(targetType="interface")
 

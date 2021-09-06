@@ -83,6 +83,7 @@ export {
   SeriesTable,
   VizTooltipOptions,
   TooltipDisplayMode,
+  TooltipExtension,
   SeriesTableProps,
   SeriesTableRow,
   SeriesTableRowProps,
@@ -255,3 +256,7 @@ export { preparePlotFrame } from './GraphNG/utils';
 export { GraphNGLegendEvent } from './GraphNG/types';
 export * from './PanelChrome/types';
 export { EmotionPerfTest } from './ThemeDemos/EmotionPerfTest';
+
+// Reveal
+export * from './Reveal/RSeriesTable';
+export * from './Reveal/RSupport';

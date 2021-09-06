@@ -61,6 +61,8 @@ import * as barGaugePanel from 'app/plugins/panel/bargauge/module';
 import * as barChartPanel from 'app/plugins/panel/barchart/module';
 import * as logsPanel from 'app/plugins/panel/logs/module';
 import * as newsPanel from 'app/plugins/panel/news/module';
+import * as populationPanel from 'app/plugins/panel/population/module';
+import * as chordPanel from 'app/plugins/panel/chord/module';
 import * as livePanel from 'app/plugins/panel/live/module';
 import * as debugPanel from 'app/plugins/panel/debug/module';
 import * as welcomeBanner from 'app/plugins/panel/welcome/module';
@@ -107,6 +109,8 @@ const builtInPlugins: any = {
   'app/plugins/panel/table/module': tablePanel,
   'app/plugins/panel/table-old/module': oldTablePanel,
   'app/plugins/panel/news/module': newsPanel,
+  'app/plugins/panel/population/module': populationPanel,
+  'app/plugins/panel/chord/module': chordPanel,
   'app/plugins/panel/live/module': livePanel,
   'app/plugins/panel/stat/module': statPanel,
   'app/plugins/panel/debug/module': debugPanel,

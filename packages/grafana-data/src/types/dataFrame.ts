@@ -84,6 +84,12 @@ export interface FieldConfig<TOptions extends object = any> {
   // Alternative to empty string
   noValue?: string;
 
+  // Reveal:: Time offset
+  timeOffset?: string;
+
+  // Reveal:: Which time offset this field is relative to.
+  timeOffsetRelativeTo?: string;
+
   // Panel Specific Values
   custom?: TOptions;
 }

@@ -15,6 +15,18 @@ export enum TooltipDisplayMode {
 /**
  * @public
  */
+export enum TooltipExtension {
+  DateOffset = 'date-offset',
+  DeltaNumeric = 'delta-numeric',
+  DeltaPercent = 'delta-percent',
+  DeltaTrend = 'delta-trend',
+}
+
+/**
+ * @public
+ */
 export type VizTooltipOptions = {
   mode: TooltipDisplayMode;
+  extensions?: TooltipExtension[];
+  dateFormat?: string;
 };

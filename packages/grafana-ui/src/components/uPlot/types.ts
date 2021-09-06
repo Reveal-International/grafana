@@ -1,6 +1,6 @@
 import React from 'react';
 import uPlot, { Options, AlignedData } from 'uplot';
-import { TimeRange } from '@grafana/data';
+import { DataFrame, Field, TimeRange } from '@grafana/data';
 import { UPlotConfigBuilder } from './config/UPlotConfigBuilder';
 
 export type PlotConfig = Pick<
@@ -37,6 +37,8 @@ export type PlotTooltipInterpolator = (
   updateTooltipPosition: (clear?: boolean) => void,
   u: uPlot
 ) => void;
+
+export type PlotLegendLabelResolver = (field: Field, value: any, data: DataFrame[]) => string;
 
 export interface PlotSelection {
   min: number;

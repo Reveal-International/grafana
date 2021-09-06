@@ -13,4 +13,5 @@ export interface VizLegendOptions {
   calcs: string[];
   displayMode: LegendDisplayMode;
   placement: LegendPlacement;
+  dateFormat?: string;
 }

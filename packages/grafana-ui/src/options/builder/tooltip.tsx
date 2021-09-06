@@ -1,4 +1,4 @@
-import { OptionsWithTooltip } from '../models.gen';
+import { OptionsWithTooltip, TooltipExtension } from '@grafana/ui';
 import { PanelOptionsEditorBuilder } from '@grafana/data';
 
 export function addTooltipOptions<T extends OptionsWithTooltip>(
@@ -24,6 +24,37 @@ export function addTooltipOptions<T extends OptionsWithTooltip>(
     defaultValue: 'single',
     settings: {
       options,
+    },
+  });
+
+  builder.addMultiSelect({
+    path: 'tooltip.extensions',
+    name: 'Tooltip Extensions',
+    category: ['Tooltip'],
+    description: 'Adds more information into the tooltips',
+    defaultValue: 'none',
+    settings: {
+      options: [
+        { value: 'date-offset', label: 'Date Offset' },
+        { value: 'delta-numeric', label: 'Delta Numeric' },
+        { value: 'delta-percent', label: 'Delta Percent' },
+        { value: 'delta-trend', label: 'Delta Trend' },
+      ],
+    },
+  });
+
+  builder.addTextInput({
+    path: 'tooltip.dateFormat',
+    name: 'Tooltip Extension Date Range Time format',
+    description: 'Date/time format applied to any extension tool tips',
+    category: ['Tooltip'],
+    defaultValue: 'DD-MM-YYYY',
+    settings: {
+      placeholder: 'DD-MM-YYYY',
+      expandTemplateVars: true,
+    },
+    showIf: (c, data) => {
+      return c.tooltip.extensions!.includes(TooltipExtension.DateOffset);
     },
   });
 }

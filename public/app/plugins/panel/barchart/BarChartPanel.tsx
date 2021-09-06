@@ -1,16 +1,25 @@
-import React, { useMemo } from 'react';
-import { PanelProps, TimeRange, VizOrientation } from '@grafana/data';
-import { StackingMode, TooltipDisplayMode, TooltipPlugin, useTheme2 } from '@grafana/ui';
+import React, { useCallback, useMemo } from 'react';
+import { TooltipDisplayMode, StackingMode, TooltipExtension } from '@grafana/ui';
+import { DataFrame, PanelProps, TimeRange, VizOrientation } from '@grafana/data';
+import { TooltipPlugin, useTheme2 } from '@grafana/ui';
 import { BarChartOptions } from './types';
 import { BarChart } from './BarChart';
 import { prepareGraphableFrames } from './utils';
+import { ExtensionTooltipRender } from './tooltip';
 
 interface Props extends PanelProps<BarChartOptions> {}
 
 /**
  * @alpha
  */
-export const BarChartPanel: React.FunctionComponent<Props> = ({ data, options, width, height, timeZone }) => {
+export const BarChartPanel: React.FunctionComponent<Props> = ({
+  data,
+  options,
+  width,
+  height,
+  timeZone,
+  timeRange,
+}) => {
   const theme = useTheme2();
 
   const { frames, warn } = useMemo(() => prepareGraphableFrames(data?.series, theme, options.stacking), [
@@ -34,6 +43,28 @@ export const BarChartPanel: React.FunctionComponent<Props> = ({ data, options, w
     return options.tooltip;
   }, [options.tooltip, options.stacking]);
 
+  const extensionTooltipRender = useCallback(
+    (alignedData: DataFrame, seriesIdx: number | null, datapointIdx: number | null) => {
+      return (
+        <ExtensionTooltipRender
+          data={frames!}
+          alignedData={alignedData}
+          seriesIdx={seriesIdx}
+          datapointIdx={datapointIdx}
+          timeRange={timeRange}
+          timeZone={timeZone}
+          tooltipOptions={options.tooltip}
+        />
+      );
+    },
+    [frames, options.tooltip, timeRange, timeZone]
+  );
+
+  // Whether to use our extension tooltip render
+  const useExtensionTooltipRender = useMemo(() => {
+    return options.tooltip.extensions?.includes(TooltipExtension.DateOffset);
+  }, [options.tooltip.extensions]);
+
   if (!frames || warn) {
     return (
       <div className="panel-empty">
@@ -54,7 +85,15 @@ export const BarChartPanel: React.FunctionComponent<Props> = ({ data, options, w
       orientation={orientation}
     >
       {(config, alignedFrame) => {
-        return <TooltipPlugin data={alignedFrame} config={config} mode={tooltip.mode} timeZone={timeZone} />;
+        return (
+          <TooltipPlugin
+            data={alignedFrame}
+            config={config}
+            mode={tooltip.mode}
+            timeZone={timeZone}
+            renderTooltip={useExtensionTooltipRender ? extensionTooltipRender : undefined}
+          />
+        );
       }}
     </BarChart>
   );
