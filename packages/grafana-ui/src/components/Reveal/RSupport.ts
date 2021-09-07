@@ -56,26 +56,26 @@ export const RSupport = {
     fieldValue: number
   ): DeltaCalculation {
     let calc = {} as DeltaCalculation;
-    calc.baseValue = baseFieldValue;
+    calc.baseValue = baseFieldValue === undefined ? 0 : baseFieldValue;
     calc.baseValueString = formattedValueToString(displayProcessor(calc.baseValue));
-    calc.fieldValue = fieldValue;
+    calc.fieldValue = fieldValue === undefined ? 0 : fieldValue;
     calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
-    calc.delta = fieldValue - baseFieldValue;
-    if (fieldValue === baseFieldValue) {
+    calc.delta = calc.fieldValue - calc.baseValue;
+    if (calc.fieldValue === calc.baseValue) {
       calc.percentString = '0%';
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_flat.png' });
-    } else if (fieldValue > baseFieldValue) {
+    } else if (calc.fieldValue > calc.baseValue) {
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_up.png' });
-      if (baseFieldValue) {
-        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+      if (calc.baseValue) {
+        calc.percent = Math.round((100.0 * (calc.fieldValue - calc.baseValue)) / calc.baseValue);
         calc.percentString = '+' + calc.percent + '%';
       } else {
         calc.percentString = '+100%';
       }
     } else {
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_down.png' });
-      if (baseFieldValue) {
-        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+      if (calc.baseValue) {
+        calc.percent = Math.round((100.0 * (calc.fieldValue - calc.baseValue)) / calc.baseValue);
         calc.percentString = calc.percent + '%';
       } else {
         calc.percentString = '-100%';
