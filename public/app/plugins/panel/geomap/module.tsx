@@ -82,6 +82,27 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         showIf: (c, data) => {
           return c.tooltips?.extensions?.includes(TooltipExtension.DateOffset);
         },
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'tooltips.titleShowLocation',
+        name: 'Show location in title',
+        description: 'Show location in title of the tooltip',
+        defaultValue: false,
+      })
+      .addTextInput({
+        category,
+        path: 'tooltips.titleCounterProperty',
+        name: 'Show counter property in title',
+        description: 'Show the property specified on the nearest counter found at geohash in the title of the tooltip',
+        defaultValue: '',
+        settings: {
+          placeholder: 'name, address.line1, address.line2, address.singleLine',
+          expandTemplateVars: true,
+        },
+        showIf: (c, data) => {
+          return c.tooltips?.extensions && c.tooltips?.extensions?.length > 0;
+        },
       });
 
     // The controls section

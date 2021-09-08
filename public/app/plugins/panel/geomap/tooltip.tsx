@@ -12,6 +12,7 @@ import {
 import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '@grafana/ui';
 import { TooltipOptions } from './types';
 import { decodeGeohash } from './utils/geohash';
+import { getBackendSrv} from "@grafana/runtime";
 
 export interface ExtensionTooltipRenderProps {
   data?: DataFrame[];
@@ -33,16 +34,29 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
     const latLng = locationField ? decodeGeohash(geoHash) : undefined;
     // TODO in here we can go async to http://localhost:8080/client/_/geocounter/${geoHash}??singleAddress=true
     // and get the address
-    setTitle(
-      <div>
-        {geoHash && <div>GeoHash:{geoHash}</div>}
-        {latLng && (
-          <div>
-            Latitude:{latLng![0]}, Longitude:{latLng![1]}
-          </div>
-        )}
-      </div>
-    );
+
+    if (props.tooltipOptions.titleCounterProperty) {
+      getBackendSrv()
+        .get('/avenge/api/_/geocounter/' + geoHash, { singleCounter: true })
+        .then((r) => {
+          // eslint-disable-next-line no-console
+          const vars = { ...r, ...r.address };
+          const title = vars[props.tooltipOptions.titleCounterProperty!];
+          setTitle(<div>{title && <div>{title}</div>}</div>);
+        });
+    } else if (props.tooltipOptions.titleShowLocation) {
+      // Default it? maybe dont do this..
+      setTitle(
+        <div>
+          {geoHash && <div>GeoHash:{geoHash}</div>}
+          {latLng && (
+            <div>
+              Latitude:{latLng![0]}, Longitude:{latLng![1]}
+            </div>
+          )}
+        </div>
+      );
+    }
   }, []); // deliberately no dependencies so runs once
 
   if (!props.data) {

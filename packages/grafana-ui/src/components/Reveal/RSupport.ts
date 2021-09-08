@@ -63,6 +63,14 @@ function getUniqueFieldName(field: Field, frame?: DataFrame) {
  * Generic Reveal support class with some useful functions.
  **/
 export const RSupport = {
+  evaluateTemplate(template: string, o: any) {
+    // @ts-ignore
+    return template.replace(/{([^{}]*)}/g, (a, b) => {
+      let r = o[b];
+      return typeof r === 'string' || typeof r === 'number' ? r : a;
+    });
+  },
+
   fieldNameMatches(frame: DataFrame, field: Field, name: string): boolean {
     if (field.name === name) {
       return true;
