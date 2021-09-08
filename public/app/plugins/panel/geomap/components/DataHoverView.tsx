@@ -4,10 +4,13 @@ import { DataFrame, Field, formattedValueToString, getFieldDisplayName, GrafanaT
 import { css } from '@emotion/css';
 import { config } from 'app/core/config';
 
+export type ToolTipRenderer = (data?: DataFrame, rowIndex?: number, columnIndex?: number) => React.ReactNode;
+
 export interface Props {
   data?: DataFrame; // source data
   rowIndex?: number; // the hover row
   columnIndex?: number; // the hover column
+  tooltipRender?: ToolTipRenderer;
 }
 
 export class DataHoverView extends PureComponent<Props> {
@@ -17,6 +20,11 @@ export class DataHoverView extends PureComponent<Props> {
     const { data, rowIndex, columnIndex } = this.props;
     if (!data || rowIndex == null) {
       return null;
+    }
+
+    // Optionally render using tooltip render
+    if (this.props.tooltipRender) {
+      return this.props.tooltipRender(data, rowIndex, columnIndex);
     }
 
     return (

@@ -32,6 +32,7 @@ import { getGlobalStyles } from './globalStyles';
 import { Global } from '@emotion/react';
 import { GeomapHoverFeature, GeomapHoverPayload } from './event';
 import { DataHoverView } from './components/DataHoverView';
+import { ExtensionTooltipRender } from './tooltip';
 
 interface MapLayerState {
   config: MapLayerOptions;
@@ -59,6 +60,18 @@ export class GeomapPanel extends Component<Props, State> {
   style = getStyles(config.theme);
   hoverPayload: GeomapHoverPayload = { point: {}, pageX: -1, pageY: -1 };
   readonly hoverEvent = new DataHoverEvent(this.hoverPayload);
+  myRender = (frame?: DataFrame, rowIndex?: number, columnIndex?: number): React.ReactNode => {
+    return ExtensionTooltipRender({
+      data: this.props.data.series,
+      frame,
+      rowIndex,
+      columnIndex,
+      timeZone: this.props.timeZone,
+      timeRange: this.props.timeRange,
+      tooltipOptions: this.props.options.tooltips,
+      theme: config.theme2,
+    });
+  };
 
   constructor(props: Props) {
     super(props);
@@ -362,7 +375,7 @@ export class GeomapPanel extends Component<Props, State> {
         <Portal>
           {ttip && ttip.data && (
             <VizTooltipContainer position={{ x: ttip.pageX, y: ttip.pageY }} offset={{ x: 10, y: 10 }}>
-              <DataHoverView {...ttip} />
+              <DataHoverView tooltipRender={this.myRender} {...ttip} />
             </VizTooltipContainer>
           )}
         </Portal>

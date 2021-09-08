@@ -1,6 +1,14 @@
 /* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
 import moment, { DurationInputArg2 } from 'moment';
-import { DataFrame, dateTimeFormat, DisplayProcessor, Field, formattedValueToString, TimeRange } from '@grafana/data';
+import {
+  DataFrame,
+  dateTimeFormat,
+  DisplayProcessor,
+  Field,
+  formattedValueToString,
+  getFieldDisplayName,
+  TimeRange,
+} from '@grafana/data';
 import React from 'react';
 
 export interface DeltaCalculation {
@@ -16,9 +24,56 @@ export interface DeltaCalculation {
 }
 
 /**
+ * Hack to try and find our corresponding field when we have an outer join applied.
+ * Copied from packages/grafana-data/src/field/fieldState.ts
+ */
+function getUniqueFieldName(field: Field, frame?: DataFrame) {
+  let dupeCount = 0;
+  let foundSelf = false;
+
+  if (frame) {
+    for (let i = 0; i < frame.fields.length; i++) {
+      const otherField = frame.fields[i];
+
+      if (field === otherField) {
+        foundSelf = true;
+
+        if (dupeCount > 0) {
+          dupeCount++;
+          break;
+        }
+      } else if (field.name === otherField.name) {
+        dupeCount++;
+
+        if (foundSelf) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (dupeCount) {
+    return `${field.name} ${dupeCount}`;
+  }
+
+  return field.name;
+}
+
+/**
  * Generic Reveal support class with some useful functions.
  **/
 export const RSupport = {
+  fieldNameMatches(frame: DataFrame, field: Field, name: string): boolean {
+    if (field.name === name) {
+      return true;
+    } else if (getFieldDisplayName(field, frame) === name) {
+      return true;
+    } else if (getUniqueFieldName(field, frame) === name) {
+      return true;
+    }
+    return false;
+  },
+
   calculateFieldDelta(
     displayProcessor: DisplayProcessor,
     frames: DataFrame[],
@@ -30,20 +85,20 @@ export const RSupport = {
     calc.fieldValue = fieldValue;
     calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
     // Does it have the time offset this field is relative to?
-    if (!field.config.timeOffsetRelativeTo) {
+    if (!field.config.compareTo) {
       return calc;
     }
-    // Find field that has timeOffset that we are relative to.
+    // Find field that that we are comparing to.
     let baseField;
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i];
-      baseField = frame.fields.find((f) => f.config.timeOffset?.trim() === field.config.timeOffsetRelativeTo?.trim());
+      baseField = frame.fields.find((f) => this.fieldNameMatches(frame, f, field.config.compareTo!));
       if (baseField) {
         break;
       }
     }
     if (!baseField) {
-      console.warn('Could not find series with time offset ' + field.config.timeOffsetRelativeTo, frames);
+      console.warn('Could not find series with name ' + field.config.compareTo, frames);
       return calc;
     }
     // Now do calculation relative to our target field.

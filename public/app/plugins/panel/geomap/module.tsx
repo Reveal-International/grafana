@@ -7,6 +7,7 @@ import { defaultView, GeomapPanelOptions } from './types';
 import { mapPanelChangedHandler } from './migrations';
 import { defaultMarkersConfig } from './layers/data/markersLayer';
 import { DEFAULT_BASEMAP_CONFIG } from './layers/registry';
+import { TooltipExtension } from '@grafana/ui';
 
 export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
   .setNoPadding()
@@ -49,6 +50,39 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       editor: DataLayersEditor,
       defaultValue: [defaultMarkersConfig],
     });
+
+    // The tooltips section
+    category = ['Tooltip Extensions'];
+    builder
+      .addMultiSelect({
+        category,
+        path: 'tooltips.extensions',
+        name: 'Tooltip Extensions',
+        description: 'Adds more information into the tooltips',
+        defaultValue: 'none',
+        settings: {
+          options: [
+            { value: 'date-offset', label: 'Date Offset' },
+            { value: 'delta-numeric', label: 'Delta Numeric' },
+            { value: 'delta-percent', label: 'Delta Percent' },
+            { value: 'delta-trend', label: 'Delta Trend' },
+          ],
+        },
+      })
+      .addTextInput({
+        category,
+        path: 'tooltips.dateFormat',
+        name: 'Date Time format',
+        description: 'Date/time format applied to any extension tool tips',
+        defaultValue: 'DD-MM-YYYY',
+        settings: {
+          placeholder: 'DD-MM-YYYY',
+          expandTemplateVars: true,
+        },
+        showIf: (c, data) => {
+          return c.tooltips?.extensions?.includes(TooltipExtension.DateOffset);
+        },
+      });
 
     // The controls section
     category = ['Map Controls'];

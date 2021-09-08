@@ -1,6 +1,6 @@
 import React from 'react';
 import { Label, stylesFactory } from '@grafana/ui';
-import { formattedValueToString, getFieldColorModeForField, GrafanaTheme } from '@grafana/data';
+import { formattedValueToString, getFieldColorModeForField, getFieldDisplayName, GrafanaTheme } from '@grafana/data';
 import { css } from '@emotion/css';
 import { config } from 'app/core/config';
 import { DimensionSupplier } from '../../dims/types';
@@ -22,6 +22,7 @@ export function MarkersLegend(props: MarkersLegendProps) {
   const fmt = (v: any) => `${formattedValueToString(color.field!.display!(v))}`;
   const colorMode = getFieldColorModeForField(color!.field!);
   
+  const label = color?.field ? getFieldDisplayName(color?.field!) : '';
   if (colorMode.isContinuous && colorMode.getColors) {
     const colors = colorMode.getColors(config.theme2)
     const colorRange = getMinMaxAndDelta(color.field!)
@@ -37,7 +38,7 @@ export function MarkersLegend(props: MarkersLegendProps) {
     // })
 
     return <>
-    <Label>{color?.field?.name}</Label>
+    <Label>{label}</Label>
     <div className={style.gradientContainer} style={{backgroundImage: `linear-gradient(to right, ${colors.map((c) => c).join(', ')}`}}>
       <div>{fmt(colorRange.min)}</div>
       <div>{fmt(colorRange.max)}</div>
