@@ -61,17 +61,25 @@ export class GeomapPanel extends Component<Props, State> {
   style = getStyles(config.theme);
   hoverPayload: GeomapHoverPayload = { point: {}, pageX: -1, pageY: -1 };
   readonly hoverEvent = new DataHoverEvent(this.hoverPayload);
-  myRender = (frame?: DataFrame, rowIndex?: number, columnIndex?: number): React.ReactNode => {
-    return ExtensionTooltipRender({
-      data: this.props.data.series,
-      frame,
-      rowIndex,
-      columnIndex,
-      timeZone: this.props.timeZone,
-      timeRange: this.props.timeRange,
-      tooltipOptions: this.props.options.tooltips,
-      theme: config.theme2,
-    });
+  tooltipRender = (
+    frame?: DataFrame,
+    rowIndex?: number,
+    columnIndex?: number,
+    point?: Record<string, any>
+  ): React.ReactNode => {
+    return (
+      <ExtensionTooltipRender
+        data={this.props.data.series}
+        frame={frame}
+        rowIndex={rowIndex}
+        columnIndex={columnIndex}
+        timeZone={this.props.timeZone}
+        timeRange={this.props.timeRange}
+        tooltipOptions={this.props.options.tooltips}
+        theme={config.theme2}
+        point={point}
+      />
+    );
   };
 
   constructor(props: Props) {
@@ -382,7 +390,7 @@ export class GeomapPanel extends Component<Props, State> {
         <Portal>
           {ttip && ttip.data && (
             <VizTooltipContainer position={{ x: ttip.pageX, y: ttip.pageY }} offset={{ x: 10, y: 10 }}>
-              <DataHoverView tooltipRender={customTooltipRender ? this.myRender : undefined} {...ttip} />
+              <DataHoverView tooltipRender={customTooltipRender ? this.tooltipRender : undefined} {...ttip} />
             </VizTooltipContainer>
           )}
         </Portal>

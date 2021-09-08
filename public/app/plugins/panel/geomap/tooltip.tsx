@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DataFrame,
   FALLBACK_COLOR,
@@ -11,6 +11,7 @@ import {
 } from '@grafana/data';
 import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '@grafana/ui';
 import { TooltipOptions } from './types';
+import { decodeGeohash } from './utils/geohash';
 
 export interface ExtensionTooltipRenderProps {
   data?: DataFrame[];
@@ -21,12 +22,33 @@ export interface ExtensionTooltipRenderProps {
   timeRange: TimeRange;
   tooltipOptions: TooltipOptions;
   theme: GrafanaTheme2;
+  point?: Record<string, any>;
 }
 
 export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
+  const [title, setTitle] = useState<any>('');
+  useEffect(() => {
+    const locationField = props.frame?.fields[0]; // Assumption is location
+    const geoHash = locationField ? locationField.values.get(props.rowIndex!) : undefined;
+    const latLng = locationField ? decodeGeohash(geoHash) : undefined;
+    // TODO in here we can go async to http://localhost:8080/client/_/geocounter/${geoHash}??singleAddress=true
+    // and get the address
+    setTitle(
+      <div>
+        {geoHash && <div>GeoHash:{geoHash}</div>}
+        {latLng && (
+          <div>
+            Latitude:{latLng![0]}, Longitude:{latLng![1]}
+          </div>
+        )}
+      </div>
+    );
+  }, []); // deliberately no dependencies so runs once
+
   if (!props.data) {
     return null;
   }
+
   let series: RSeriesTableRowProps[] = [];
   for (let i = 0; i < props.data.length; i++) {
     const frame = props.data[i];
@@ -65,5 +87,5 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
       });
     }
   }
-  return <RSeriesTable series={series} />;
+  return <RSeriesTable title={title} series={series} />;
 }

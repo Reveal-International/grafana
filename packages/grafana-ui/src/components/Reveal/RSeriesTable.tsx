@@ -101,7 +101,7 @@ export const RSeriesTableRow: React.FC<RSeriesTableRowProps> = ({
  * @public
  */
 export interface RSeriesTableProps {
-  title?: string | GraphSeriesValue;
+  title?: string | GraphSeriesValue | React.ReactNode;
   series: RSeriesTableRowProps[];
 }
 
