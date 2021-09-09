@@ -92,6 +92,17 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       })
       .addTextInput({
         category,
+        path: 'tooltips.title',
+        name: 'Tooltip title',
+        description: 'Custom tooltip title',
+        defaultValue: '',
+        settings: {
+          placeholder: '',
+          expandTemplateVars: true,
+        },
+      })
+      .addTextInput({
+        category,
         path: 'tooltips.titleCounterProperty',
         name: 'Show counter property in title',
         description: 'Show the property specified on the nearest counter found at geohash in the title of the tooltip',

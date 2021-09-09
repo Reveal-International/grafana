@@ -28,7 +28,10 @@ export function frameHasName(name: string | undefined, names: FrameFieldsDisplay
 /**
  * Retuns the distinct names in a set of frames
  */
-function getFrameFieldsDisplayNames(data: DataFrame[], filter?: (field: Field) => boolean): FrameFieldsDisplayNames {
+export function getFrameFieldsDisplayNames(
+  data: DataFrame[],
+  filter?: (field: Field) => boolean
+): FrameFieldsDisplayNames {
   const names: FrameFieldsDisplayNames = {
     display: new Set<string>(),
     raw: new Set<string>(),

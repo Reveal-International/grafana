@@ -12,7 +12,7 @@ import {
 import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '@grafana/ui';
 import { TooltipOptions } from './types';
 import { decodeGeohash } from './utils/geohash';
-import { getBackendSrv} from "@grafana/runtime";
+import { getBackendSrv } from '@grafana/runtime';
 
 export interface ExtensionTooltipRenderProps {
   data?: DataFrame[];
@@ -28,13 +28,19 @@ export interface ExtensionTooltipRenderProps {
 
 export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
   const [title, setTitle] = useState<any>('');
+  const [subTitle1, setSubTitle1] = useState<any>('');
+  const [subTitle2, setSubTitle2] = useState<any>('');
   useEffect(() => {
     const locationField = props.frame?.fields[0]; // Assumption is location
     const geoHash = locationField ? locationField.values.get(props.rowIndex!) : undefined;
     const latLng = locationField ? decodeGeohash(geoHash) : undefined;
-    // TODO in here we can go async to http://localhost:8080/client/_/geocounter/${geoHash}??singleAddress=true
+    if (props.tooltipOptions.title) {
+      setTitle(props.tooltipOptions.title);
+    }
+    if (latLng && props.tooltipOptions.titleShowLocation) {
+      setSubTitle2(`Latitude:${latLng![0]}, Longitude:${latLng![1]}, GeoHash:${geoHash}`);
+    }
     // and get the address
-
     if (props.tooltipOptions.titleCounterProperty) {
       getBackendSrv()
         .get('/avenge/api/_/geocounter/' + geoHash, { singleCounter: true })
@@ -42,22 +48,16 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
           // eslint-disable-next-line no-console
           const vars = { ...r, ...r.address };
           const title = vars[props.tooltipOptions.titleCounterProperty!];
-          setTitle(<div>{title && <div>{title}</div>}</div>);
+          setSubTitle1(title);
         });
-    } else if (props.tooltipOptions.titleShowLocation) {
-      // Default it? maybe dont do this..
-      setTitle(
-        <div>
-          {geoHash && <div>GeoHash:{geoHash}</div>}
-          {latLng && (
-            <div>
-              Latitude:{latLng![0]}, Longitude:{latLng![1]}
-            </div>
-          )}
-        </div>
-      );
     }
-  }, []); // deliberately no dependencies so runs once
+  }, [
+    props.frame?.fields,
+    props.rowIndex,
+    props.tooltipOptions.title,
+    props.tooltipOptions.titleCounterProperty,
+    props.tooltipOptions.titleShowLocation,
+  ]); // deliberately no dependencies so runs once
 
   if (!props.data) {
     return null;
@@ -101,5 +101,5 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
       });
     }
   }
-  return <RSeriesTable title={title} series={series} />;
+  return <RSeriesTable title={title} subtitle1={subTitle1} subtitle2={subTitle2} series={series} />;
 }

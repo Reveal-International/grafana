@@ -10,6 +10,7 @@ import {
   TimeRange,
 } from '@grafana/data';
 import React from 'react';
+import { getFrameFieldsDisplayNames } from '../MatchersUI/utils';
 
 export interface DeltaCalculation {
   baseValue: number;
@@ -106,7 +107,8 @@ export const RSupport = {
       }
     }
     if (!baseField) {
-      console.warn('Could not find series with name ' + field.config.compareTo, frames);
+      const fdNames = getFrameFieldsDisplayNames(frames);
+      console.warn('Could not find series with name ' + field.config.compareTo, frames, fdNames);
       return calc;
     }
     // Now do calculation relative to our target field.

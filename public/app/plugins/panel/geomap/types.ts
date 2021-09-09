@@ -40,6 +40,7 @@ export const defaultView: MapViewConfig = {
 
 export interface TooltipOptions {
   extensions?: [TooltipExtension];
+  title?: string;
   titleShowLocation: boolean;
   titleCounterProperty?: string;
   dateFormat?: string;

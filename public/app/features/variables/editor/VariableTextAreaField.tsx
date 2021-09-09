@@ -34,7 +34,7 @@ export function VariableTextAreaField({
       return value.split('\n').length;
     }
 
-    return 1;
+    return 4;
   }, []);
 
   return (

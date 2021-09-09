@@ -47,7 +47,7 @@ class CustomVariableEditorUnconnected extends PureComponent<Props> {
         <VerticalGroup spacing="md">
           <VerticalGroup spacing="none">
             <VariableTextAreaField
-              name="Values separated by comma"
+              name="Values separated by comma or newlines"
               value={this.props.variable.query}
               placeholder="1, 10, mykey : myvalue, myvalue, escaped\,value"
               onChange={this.onChange}
