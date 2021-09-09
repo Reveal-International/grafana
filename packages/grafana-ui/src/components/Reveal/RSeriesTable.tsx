@@ -60,6 +60,14 @@ const getSeriesTableRowStyles = (theme: GrafanaTheme2) => {
     `,
     title: css`
       font-weight: ${theme.typography.fontWeightBold};
+      font-size: ${theme.typography.body.fontSize};
+    `,
+    subtitle1: css`
+      font-weight: ${theme.typography.fontWeightBold};
+      font-size: ${theme.typography.bodySmall.fontSize};
+    `,
+    subtitle2: css`
+      font-weight: ${theme.typography.fontWeightBold};
       font-size: ${theme.typography.bodySmall.fontSize};
     `,
   };
@@ -101,14 +109,16 @@ export const RSeriesTableRow: React.FC<RSeriesTableRowProps> = ({
  * @public
  */
 export interface RSeriesTableProps {
-  title?: string | GraphSeriesValue;
+  title?: string | GraphSeriesValue | React.ReactNode;
+  subtitle1?: string | GraphSeriesValue | React.ReactNode;
+  subtitle2?: string | GraphSeriesValue | React.ReactNode;
   series: RSeriesTableRowProps[];
 }
 
 /**
  * @public
  */
-export const RSeriesTable: React.FC<RSeriesTableProps> = ({ title, series }) => {
+export const RSeriesTable: React.FC<RSeriesTableProps> = ({ title, subtitle1, subtitle2, series }) => {
   const styles = useStyles2(getSeriesTableRowStyles);
 
   return (
@@ -116,6 +126,16 @@ export const RSeriesTable: React.FC<RSeriesTableProps> = ({ title, series }) => 
       {title && (
         <div className={styles.title} aria-label="Title">
           {title}
+        </div>
+      )}
+      {subtitle1 && (
+        <div className={styles.subtitle1} aria-label="First Subtitle">
+          {subtitle1}
+        </div>
+      )}
+      {subtitle2 && (
+        <div className={styles.subtitle2} aria-label="Second Subtitle">
+          {subtitle2}
         </div>
       )}
       {series.map((s, i) => {

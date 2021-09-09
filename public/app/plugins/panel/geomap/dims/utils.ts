@@ -1,4 +1,5 @@
-import { DataFrame, Field, getFieldDisplayName } from '@grafana/data';
+import { DataFrame, Field } from '@grafana/data';
+import { RSupport } from '@grafana/ui';
 
 export function findField(frame: DataFrame, name?: string): Field | undefined {
   if (!name?.length) {
@@ -6,11 +7,7 @@ export function findField(frame: DataFrame, name?: string): Field | undefined {
   }
 
   for (const field of frame.fields) {
-    if (name === field.name) {
-      return field;
-    }
-    const disp = getFieldDisplayName(field, frame);
-    if (name === disp) {
+    if (RSupport.fieldNameMatches(frame, field, name)) {
       return field;
     }
   }

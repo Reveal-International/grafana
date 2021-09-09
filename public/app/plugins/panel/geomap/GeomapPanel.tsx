@@ -32,6 +32,7 @@ import { getGlobalStyles } from './globalStyles';
 import { Global } from '@emotion/react';
 import { GeomapHoverFeature, GeomapHoverPayload } from './event';
 import { DataHoverView } from './components/DataHoverView';
+import { ExtensionTooltipRender } from './tooltip';
 
 interface MapLayerState {
   config: MapLayerOptions;
@@ -46,6 +47,7 @@ export let lastGeomapPanelInstance: GeomapPanel | undefined = undefined;
 type Props = PanelProps<GeomapPanelOptions>;
 interface State extends OverlayProps {
   ttip?: GeomapHoverPayload;
+  customTooltipRender?: boolean;
 }
 
 export class GeomapPanel extends Component<Props, State> {
@@ -59,10 +61,32 @@ export class GeomapPanel extends Component<Props, State> {
   style = getStyles(config.theme);
   hoverPayload: GeomapHoverPayload = { point: {}, pageX: -1, pageY: -1 };
   readonly hoverEvent = new DataHoverEvent(this.hoverPayload);
+  tooltipRender = (
+    frame?: DataFrame,
+    rowIndex?: number,
+    columnIndex?: number,
+    point?: Record<string, any>
+  ): React.ReactNode => {
+    return (
+      <ExtensionTooltipRender
+        data={this.props.data.series}
+        frame={frame}
+        rowIndex={rowIndex}
+        columnIndex={columnIndex}
+        timeZone={this.props.timeZone}
+        timeRange={this.props.timeRange}
+        tooltipOptions={this.props.options.tooltips}
+        theme={config.theme2}
+        point={point}
+      />
+    );
+  };
 
   constructor(props: Props) {
     super(props);
-    this.state = {};
+    const customTooltipRender =
+      props.options.tooltips && props.options.tooltips.extensions && props.options.tooltips.extensions.length > 0;
+    this.state = { customTooltipRender };
   }
 
   componentDidMount() {
@@ -122,6 +146,10 @@ export class GeomapPanel extends Component<Props, State> {
       this.initLayers(options.layers ?? []); // async
       layersChanged = true;
     }
+
+    const customTooltipRender =
+      options.tooltips && options.tooltips.extensions && options.tooltips.extensions.length > 0;
+    this.setState({ customTooltipRender });
     return layersChanged;
   }
 
@@ -350,7 +378,7 @@ export class GeomapPanel extends Component<Props, State> {
   }
 
   render() {
-    const { ttip, topRight, bottomLeft } = this.state;
+    const { ttip, topRight, bottomLeft, customTooltipRender } = this.state;
 
     return (
       <>
@@ -362,7 +390,7 @@ export class GeomapPanel extends Component<Props, State> {
         <Portal>
           {ttip && ttip.data && (
             <VizTooltipContainer position={{ x: ttip.pageX, y: ttip.pageY }} offset={{ x: 10, y: 10 }}>
-              <DataHoverView {...ttip} />
+              <DataHoverView tooltipRender={customTooltipRender ? this.tooltipRender : undefined} {...ttip} />
             </VizTooltipContainer>
           )}
         </Portal>

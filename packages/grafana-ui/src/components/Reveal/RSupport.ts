@@ -1,7 +1,16 @@
 /* eslint-disable id-blacklist, no-restricted-imports, @typescript-eslint/ban-types */
 import moment, { DurationInputArg2 } from 'moment';
-import { DataFrame, dateTimeFormat, DisplayProcessor, Field, formattedValueToString, TimeRange } from '@grafana/data';
+import {
+  DataFrame,
+  dateTimeFormat,
+  DisplayProcessor,
+  Field,
+  formattedValueToString,
+  getFieldDisplayName,
+  TimeRange,
+} from '@grafana/data';
 import React from 'react';
+import { getFrameFieldsDisplayNames } from '../MatchersUI/utils';
 
 export interface DeltaCalculation {
   baseValue: number;
@@ -16,9 +25,64 @@ export interface DeltaCalculation {
 }
 
 /**
+ * Hack to try and find our corresponding field when we have an outer join applied.
+ * Copied from packages/grafana-data/src/field/fieldState.ts
+ */
+function getUniqueFieldName(field: Field, frame?: DataFrame) {
+  let dupeCount = 0;
+  let foundSelf = false;
+
+  if (frame) {
+    for (let i = 0; i < frame.fields.length; i++) {
+      const otherField = frame.fields[i];
+
+      if (field === otherField) {
+        foundSelf = true;
+
+        if (dupeCount > 0) {
+          dupeCount++;
+          break;
+        }
+      } else if (field.name === otherField.name) {
+        dupeCount++;
+
+        if (foundSelf) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (dupeCount) {
+    return `${field.name} ${dupeCount}`;
+  }
+
+  return field.name;
+}
+
+/**
  * Generic Reveal support class with some useful functions.
  **/
 export const RSupport = {
+  evaluateTemplate(template: string, o: any) {
+    // @ts-ignore
+    return template.replace(/{([^{}]*)}/g, (a, b) => {
+      let r = o[b];
+      return typeof r === 'string' || typeof r === 'number' ? r : a;
+    });
+  },
+
+  fieldNameMatches(frame: DataFrame, field: Field, name: string): boolean {
+    if (field.name === name) {
+      return true;
+    } else if (getFieldDisplayName(field, frame) === name) {
+      return true;
+    } else if (getUniqueFieldName(field, frame) === name) {
+      return true;
+    }
+    return false;
+  },
+
   calculateFieldDelta(
     displayProcessor: DisplayProcessor,
     frames: DataFrame[],
@@ -30,20 +94,21 @@ export const RSupport = {
     calc.fieldValue = fieldValue;
     calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
     // Does it have the time offset this field is relative to?
-    if (!field.config.timeOffsetRelativeTo) {
+    if (!field.config.compareTo) {
       return calc;
     }
-    // Find field that has timeOffset that we are relative to.
+    // Find field that that we are comparing to.
     let baseField;
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i];
-      baseField = frame.fields.find((f) => f.config.timeOffset?.trim() === field.config.timeOffsetRelativeTo?.trim());
+      baseField = frame.fields.find((f) => this.fieldNameMatches(frame, f, field.config.compareTo!));
       if (baseField) {
         break;
       }
     }
     if (!baseField) {
-      console.warn('Could not find series with time offset ' + field.config.timeOffsetRelativeTo, frames);
+      const fdNames = getFrameFieldsDisplayNames(frames);
+      console.warn('Could not find series with name ' + field.config.compareTo, frames, fdNames);
       return calc;
     }
     // Now do calculation relative to our target field.
@@ -56,26 +121,26 @@ export const RSupport = {
     fieldValue: number
   ): DeltaCalculation {
     let calc = {} as DeltaCalculation;
-    calc.baseValue = baseFieldValue;
+    calc.baseValue = baseFieldValue === undefined ? 0 : baseFieldValue;
     calc.baseValueString = formattedValueToString(displayProcessor(calc.baseValue));
-    calc.fieldValue = fieldValue;
+    calc.fieldValue = fieldValue === undefined ? 0 : fieldValue;
     calc.fieldValueString = formattedValueToString(displayProcessor(calc.fieldValue));
-    calc.delta = fieldValue - baseFieldValue;
-    if (fieldValue === baseFieldValue) {
+    calc.delta = calc.fieldValue - calc.baseValue;
+    if (calc.fieldValue === calc.baseValue) {
       calc.percentString = '0%';
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_flat.png' });
-    } else if (fieldValue > baseFieldValue) {
+    } else if (calc.fieldValue > calc.baseValue) {
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_up.png' });
-      if (baseFieldValue) {
-        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+      if (calc.baseValue) {
+        calc.percent = Math.round((100.0 * (calc.fieldValue - calc.baseValue)) / calc.baseValue);
         calc.percentString = '+' + calc.percent + '%';
       } else {
         calc.percentString = '+100%';
       }
     } else {
       calc.trendImg = React.createElement('img', { src: 'public/img/icon_trending_down.png' });
-      if (baseFieldValue) {
-        calc.percent = Math.round((100.0 * (fieldValue - baseFieldValue)) / baseFieldValue);
+      if (calc.baseValue) {
+        calc.percent = Math.round((100.0 * (calc.fieldValue - calc.baseValue)) / calc.baseValue);
         calc.percentString = calc.percent + '%';
       } else {
         calc.percentString = '-100%';

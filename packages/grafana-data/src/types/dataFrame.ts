@@ -87,8 +87,8 @@ export interface FieldConfig<TOptions extends object = any> {
   // Reveal:: Time offset
   timeOffset?: string;
 
-  // Reveal:: Which time offset this field is relative to.
-  timeOffsetRelativeTo?: string;
+  // Reveal:: Which field to compare to
+  compareTo?: string;
 
   // Panel Specific Values
   custom?: TOptions;

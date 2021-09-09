@@ -61,7 +61,7 @@ export class VariableOptions extends PureComponent<Props> {
     const highlightClass = index === highlightIndex ? `${selectClass} highlighted` : selectClass;
 
     return (
-      <li>
+      <li key={index}>
         <a
           key={`${option.value}`}
           role="checkbox"

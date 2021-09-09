@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { TooltipDisplayMode, StackingMode, TooltipExtension } from '@grafana/ui';
 import { DataFrame, PanelProps, TimeRange, VizOrientation } from '@grafana/data';
-import { TooltipPlugin, useTheme2 } from '@grafana/ui';
+import { TooltipPlugin, TooltipDisplayMode, StackingMode, TooltipExtension, useTheme2 } from '@grafana/ui';
 import { BarChartOptions } from './types';
 import { BarChart } from './BarChart';
 import { prepareGraphableFrames } from './utils';

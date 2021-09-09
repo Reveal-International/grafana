@@ -29,15 +29,19 @@ export const customVariableSlice = createSlice({
       const instanceState = getInstanceState<CustomVariableModel>(state, action.payload.id);
       const { includeAll, query } = instanceState;
 
-      const match = query.match(/(?:\\,|[^,])+/g) ?? [];
-      const options = match.map((text) => {
-        text = text.replace(/\\,/g, ',');
-        const textMatch = /^(.+)\s:\s(.+)$/g.exec(text) ?? [];
+      // Changed to split by newline and comma and be a bit more consistent and easy to use.
+      let options = [];
+      query.split(/\r?\n/).forEach((line) => {
+        line = line.trim();
+        if (line.endsWith(',')) {
+          line = line.substr(0, line.length - 1);
+        }
+        const textMatch = /^(.+)\s?:\s?(.+)$/g.exec(line) ?? [];
         if (textMatch.length === 3) {
           const [, key, value] = textMatch;
-          return { text: key.trim(), value: value.trim(), selected: false };
+          options.push({ text: key.trim(), value: value.trim(), selected: false });
         } else {
-          return { text: text.trim(), value: text.trim(), selected: false };
+          options.push({ text: line.trim(), value: line.trim(), selected: false });
         }
       });
 

@@ -1,6 +1,7 @@
 import { MapLayerOptions } from '@grafana/data';
 import Units from 'ol/proj/Units';
 import { MapCenterID } from './view';
+import { TooltipExtension } from '@grafana/ui';
 
 export interface ControlsOptions {
   // Zoom (upper left)
@@ -37,9 +38,18 @@ export const defaultView: MapViewConfig = {
   zoom: 1,
 };
 
+export interface TooltipOptions {
+  extensions?: [TooltipExtension];
+  title?: string;
+  titleShowLocation: boolean;
+  titleCounterProperty?: string;
+  dateFormat?: string;
+}
+
 export interface GeomapPanelOptions {
   view: MapViewConfig;
   controls: ControlsOptions;
   basemap: MapLayerOptions;
   layers: MapLayerOptions[];
+  tooltips: TooltipOptions;
 }

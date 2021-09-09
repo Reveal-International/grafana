@@ -24,6 +24,8 @@ import {
   StatsPickerConfigSettings,
   displayNameOverrideProcessor,
   FieldNamePickerConfigSettings,
+  fieldMatchers,
+  FieldMatcherID,
 } from '@grafana/data';
 
 import { Switch } from '../components/Switch/Switch';
@@ -45,6 +47,7 @@ import { ColorValueEditor } from '../components/OptionsUI/color';
 import { FieldColorEditor } from '../components/OptionsUI/fieldColor';
 import { StatsPickerEditor } from '../components/OptionsUI/stats';
 import { FieldNamePicker } from '../components/MatchersUI/FieldNamePicker';
+import { FieldNameMatcherEditor } from '../components/MatchersUI/FieldNameMatcherEditor';
 
 /**
  * Returns collection of common field config properties definitions
@@ -198,14 +201,14 @@ export const getStandardFieldConfigs = () => {
     id: 'timeOffset',
     path: 'timeOffset',
     name: 'Time Offset',
-    description: 'Time offset applied to field (series)',
+    description: 'Specify the time offset that has been applied to field/series via rev-time-shift',
 
     editor: standardEditorsRegistry.get('text').editor as any,
     override: standardEditorsRegistry.get('text').editor as any,
     process: stringOverrideProcessor,
 
     settings: {
-      placeholder: 'e.g: 1d 3w 2M',
+      placeholder: 'e.g: 1d 3w 2M 1y',
       expandTemplateVars: true,
     },
     // ??? any optionsUi with no value
@@ -213,20 +216,35 @@ export const getStandardFieldConfigs = () => {
     category,
   };
 
-  const timeOffsetRelativeTo: FieldConfigPropertyItem<any, string, StringFieldConfigSettings> = {
-    id: 'timeOffsetRelativeTo',
-    path: 'timeOffsetRelativeTo',
-    name: 'Time Offset Relative To',
-    description: 'Any delta calculations are against the series with this time offset',
+  const compareTo: FieldConfigPropertyItem<any, string, StringFieldConfigSettings> = {
+    id: 'compareTo',
+    path: 'compareTo',
+    name: 'Compare to field',
+    description: 'Choose a field/series that will be used as the baseline to compare this field/series against',
 
-    editor: standardEditorsRegistry.get('text').editor as any,
-    override: standardEditorsRegistry.get('text').editor as any,
+    // TODO what options should I use here
+    // eslint-disable-next-line react/display-name
+    editor: (c) => (
+      <FieldNameMatcherEditor
+        matcher={fieldMatchers.get(FieldMatcherID.byName)}
+        options={c.value}
+        onChange={c.onChange}
+        data={c.context.data}
+      />
+    ),
+    // TODO what options should I use here
+    // eslint-disable-next-line react/display-name
+    override: (c) => (
+      <FieldNameMatcherEditor
+        matcher={fieldMatchers.get(FieldMatcherID.byName)}
+        options={c.value}
+        onChange={c.onChange}
+        data={c.context.data}
+      />
+    ),
     process: stringOverrideProcessor,
 
-    settings: {
-      placeholder: 'e.g: 1d 3w 2M',
-      expandTemplateVars: true,
-    },
+    settings: {},
     // ??? any optionsUi with no value
     shouldApply: () => true,
     category,
@@ -262,20 +280,7 @@ export const getStandardFieldConfigs = () => {
     category,
   };
 
-  return [
-    unit,
-    min,
-    max,
-    decimals,
-    displayName,
-    timeOffset,
-    timeOffsetRelativeTo,
-    color,
-    noValue,
-    thresholds,
-    mappings,
-    links,
-  ];
+  return [unit, min, max, decimals, displayName, timeOffset, compareTo, color, noValue, thresholds, mappings, links];
 };
 
 /**
