@@ -45,19 +45,6 @@ export const customVariableSlice = createSlice({
         }
       });
 
-      // OLD WAY
-      // const match = query.match(/(?:\\,|[^,])+/gm) ?? [];
-      // const options = match.map((text) => {
-      //   text = text.replace(/\\,/g, ',');
-      //   const textMatch = /^(.+)\s:\s(.+)$/g.exec(text) ?? [];
-      //   if (textMatch.length === 3) {
-      //     const [, key, value] = textMatch;
-      //     return { text: key.trim(), value: value.trim(), selected: false };
-      //   } else {
-      //     return { text: text.trim(), value: text.trim(), selected: false };
-      //   }
-      // });
-
       if (includeAll) {
         options.unshift({ text: ALL_VARIABLE_TEXT, value: ALL_VARIABLE_VALUE, selected: false });
       }

@@ -34,6 +34,7 @@ export function VariableTextAreaField({
       return value.split('\n').length;
     }
 
+    // 4 seems a sane number to add any significant variables.
     return 4;
   }, []);
 

@@ -129,12 +129,12 @@ export const RSeriesTable: React.FC<RSeriesTableProps> = ({ title, subtitle1, su
         </div>
       )}
       {subtitle1 && (
-        <div className={styles.subtitle1} aria-label="Title">
+        <div className={styles.subtitle1} aria-label="First Subtitle">
           {subtitle1}
         </div>
       )}
-      {subtitle1 && (
-        <div className={styles.subtitle2} aria-label="Title">
+      {subtitle2 && (
+        <div className={styles.subtitle2} aria-label="Second Subtitle">
           {subtitle2}
         </div>
       )}

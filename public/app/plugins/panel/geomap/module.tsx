@@ -73,7 +73,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         category,
         path: 'tooltips.dateFormat',
         name: 'Date Time format',
-        description: 'Date/time format applied to any extension tool tips',
+        description: 'Date/time format applied to any extension tooltips',
         defaultValue: 'DD-MM-YYYY',
         settings: {
           placeholder: 'DD-MM-YYYY',
