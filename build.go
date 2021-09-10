@@ -300,7 +300,7 @@ func ldflags() string {
 	var b bytes.Buffer
 	b.WriteString("-w")
 	b.WriteString(fmt.Sprintf(" -X main.version=%s", version))
-// 	b.WriteString(fmt.Sprintf(" -X main.commit=%s", getGitSha()))
+	b.WriteString(fmt.Sprintf(" -X main.commit=%s", os.Getenv("GRAFANA_REVEAL_VERSION")))
 	b.WriteString(fmt.Sprintf(" -X main.buildstamp=%d", buildStamp()))
 	b.WriteString(fmt.Sprintf(" -X main.buildBranch=%s", getGitBranch()))
 	if v := os.Getenv("LDFLAGS"); v != "" {
