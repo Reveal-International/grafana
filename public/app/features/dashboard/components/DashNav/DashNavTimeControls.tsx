@@ -1,6 +1,6 @@
 // Libraries
 import React, { Component } from 'react';
-import { dateMath, TimeRange, TimeZone } from '@grafana/data';
+import { dateMath, TimeRange, TimeZone, toUtc } from '@grafana/data';
 
 // Types
 import { DashboardModel } from '../../state';
@@ -14,6 +14,7 @@ import { getTimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import { appEvents } from 'app/core/core';
 import { ShiftTimeEvent, ShiftTimeEventPayload, TimeRangeUpdatedEvent, ZoomOutEvent } from '../../../../types/events';
 import { Unsubscribable } from 'rxjs';
+import { TimeTravel } from '@grafana/ui/src/components/Reveal/TimeTravel';
 
 export interface Props {
   dashboard: DashboardModel;
@@ -34,6 +35,13 @@ export class DashNavTimeControls extends Component<Props> {
   onChangeRefreshInterval = (interval: string) => {
     getTimeSrv().setAutoRefresh(interval);
     this.forceUpdate();
+  };
+
+  onUpdateTimeRange = (from: number, to: number) => {
+    getTimeSrv().setTime({
+      from: toUtc(from),
+      to: toUtc(to),
+    });
   };
 
   onRefresh = () => {
@@ -102,6 +110,7 @@ export class DashNavTimeControls extends Component<Props> {
           tooltip="Refresh dashboard"
           noIntervalPicker={hideIntervalPicker}
         />
+        {dashboard.timepicker.timeTravel && <TimeTravel onUpdateTimeRange={this.onUpdateTimeRange} />}
       </ToolbarButtonRow>
     );
   }

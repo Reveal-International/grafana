@@ -28,7 +28,6 @@ export class VariableInput extends PureComponent<Props> {
         ref={(instance) => {
           if (instance) {
             instance.focus();
-            instance.setAttribute('style', `width:${Math.max(instance.width, 80)}px`);
           }
         }}
         type="text"

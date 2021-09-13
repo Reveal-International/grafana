@@ -10,8 +10,10 @@ interface Props {
   onRefreshIntervalChange: (interval: string[]) => void;
   onNowDelayChange: (nowDelay: string) => void;
   onHideTimePickerChange: (hide: boolean) => void;
+  onTimeTravelVisibleChange: (visible: boolean) => void;
   refreshIntervals: string[];
   timePickerHidden: boolean;
+  timeTravelVisible: boolean;
   nowDelay: string;
   timezone: TimeZone;
 }
@@ -41,6 +43,10 @@ export class TimePickerSettings extends PureComponent<Props, State> {
 
   onHideTimePickerChange = () => {
     this.props.onHideTimePickerChange(!this.props.timePickerHidden);
+  };
+
+  onTimeTravelVisibleChange = () => {
+    this.props.onTimeTravelVisibleChange(this.props.timeTravelVisible);
   };
 
   onTimeZoneChange = (timeZone?: string) => {
@@ -78,6 +84,12 @@ export class TimePickerSettings extends PureComponent<Props, State> {
         </Field>
         <Field label="Hide time picker">
           <Switch value={!!this.props.timePickerHidden} onChange={this.onHideTimePickerChange} />
+        </Field>
+        <Field
+          label="Show time travel"
+          description="Allows the user to trigger time travel (note this can be computationally expensive)"
+        >
+          <Switch value={this.props.timeTravelVisible} onChange={this.onTimeTravelVisibleChange} />
         </Field>
       </CollapsableSection>
     );
