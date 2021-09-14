@@ -326,6 +326,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
               onAddPanel={this.onAddPanel}
               kioskMode={kioskMode}
               hideTimePicker={dashboard.timepicker.hidden}
+              timeTravelVisible={dashboard.timepicker.timeTravel}
             />
           </header>
         )}

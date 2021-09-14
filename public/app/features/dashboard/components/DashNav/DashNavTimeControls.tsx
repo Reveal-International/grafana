@@ -1,6 +1,6 @@
 // Libraries
 import React, { Component } from 'react';
-import { dateMath, TimeRange, TimeZone, toUtc } from '@grafana/data';
+import { dateMath, DateTime, TimeRange, TimeZone, toUtc } from '@grafana/data';
 
 // Types
 import { DashboardModel } from '../../state';
@@ -37,11 +37,15 @@ export class DashNavTimeControls extends Component<Props> {
     this.forceUpdate();
   };
 
-  onUpdateTimeRange = (from: number, to: number) => {
-    getTimeSrv().setTime({
-      from: toUtc(from),
-      to: toUtc(to),
-    });
+  onTimeTravelUpdateTimeRange = (from: DateTime, to: DateTime) => {
+    getTimeSrv().setTime(
+      {
+        from: toUtc(from.valueOf()),
+        to: toUtc(to.valueOf()),
+      },
+      undefined,
+      false
+    );
   };
 
   onRefresh = () => {
@@ -110,7 +114,12 @@ export class DashNavTimeControls extends Component<Props> {
           tooltip="Refresh dashboard"
           noIntervalPicker={hideIntervalPicker}
         />
-        {dashboard.timepicker.timeTravel && <TimeTravel onUpdateTimeRange={this.onUpdateTimeRange} />}
+        {dashboard.timepicker.timeTravel && (
+          <TimeTravel
+            getStartTime={() => getTimeSrv().timeRange().from}
+            onUpdateTimeRange={this.onTimeTravelUpdateTimeRange}
+          />
+        )}
       </ToolbarButtonRow>
     );
   }

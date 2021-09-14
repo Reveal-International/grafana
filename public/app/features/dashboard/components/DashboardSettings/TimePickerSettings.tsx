@@ -46,7 +46,7 @@ export class TimePickerSettings extends PureComponent<Props, State> {
   };
 
   onTimeTravelVisibleChange = () => {
-    this.props.onTimeTravelVisibleChange(this.props.timeTravelVisible);
+    this.props.onTimeTravelVisibleChange(!this.props.timeTravelVisible);
   };
 
   onTimeZoneChange = (timeZone?: string) => {

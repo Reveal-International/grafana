@@ -24,6 +24,7 @@ export interface OwnProps {
   isFullscreen: boolean;
   kioskMode: KioskMode;
   hideTimePicker: boolean;
+  timeTravelVisible: boolean;
   folderTitle?: string;
   title: string;
   onAddPanel: () => void;

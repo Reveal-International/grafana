@@ -12,7 +12,8 @@ import {
 import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '@grafana/ui';
 import { TooltipOptions } from './types';
 import { decodeGeohash } from './utils/geohash';
-import { getBackendSrv } from '@grafana/runtime';
+import { FetchResponse, getBackendSrv } from '@grafana/runtime';
+import { map } from "rxjs/operators";
 
 export interface ExtensionTooltipRenderProps {
   data?: DataFrame[];
@@ -43,12 +44,22 @@ export function ExtensionTooltipRender(props: ExtensionTooltipRenderProps) {
     // and get the address
     if (props.tooltipOptions.titleCounterProperty) {
       getBackendSrv()
-        .get('/avenge/api/_/geocounter/' + geoHash, { singleCounter: true })
+        .fetch({
+          method: 'GET',
+          url: '/avenge/api/_/geocounter/' + geoHash,
+          params: { singleCounter: true },
+          showErrorAlert: false,
+        })
+        .pipe(map((response: FetchResponse) => response.data))
+        .toPromise()
         .then((r) => {
-          // eslint-disable-next-line no-console
+          // @ts-ignore
           const vars = { ...r, ...r.address };
           const title = vars[props.tooltipOptions.titleCounterProperty!];
           setSubTitle1(title);
+        })
+        .catch((r) => {
+          // do nowt...
         });
     }
   }, [

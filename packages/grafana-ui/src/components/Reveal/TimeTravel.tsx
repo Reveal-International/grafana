@@ -1,9 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { MouseEvent, useState } from 'react';
 import { dateTime, DateTime, DurationUnit, SelectableValue } from '@grafana/data';
 import { ButtonSelect } from '../Dropdown/ButtonSelect';
-import { ButtonGroup, ToolbarButton, ToolbarButtonVariant } from '../Button';
+import { ButtonGroup, ToolbarButton } from '../Button';
 import { useInterval } from 'react-use';
-import { getTimeSrv } from '../../../../../public/app/features/dashboard/services/TimeSrv';
 
 export const timeHops = [
   { label: '', value: '' },
@@ -27,30 +26,30 @@ export const timeHops = [
 ] as Array<SelectableValue<string>>;
 
 export const refreshIntervals = [
-  { label: 'Off', value: '', icon: 'video' },
-  { label: '1s', value: '1' },
-  { label: '2s', value: '2' },
-  { label: '5s', value: '5' },
-  { label: '10s', value: '10' },
-  { label: '30s', value: '30' },
-  { label: '1m', value: '60' },
+  { label: 'Off', value: '0' },
+  { label: '250ms', value: '250' },
+  { label: '500ms', value: '500' },
+  { label: '750ms', value: '750' },
+  { label: '1s', value: '1000' },
+  { label: '2s', value: '2000' },
+  { label: '5s', value: '5000' },
+  { label: '10s', value: '10000' },
+  { label: '30s', value: '30000' },
+  { label: '1m', value: '60000' },
 ] as Array<SelectableValue<string>>;
 
 export interface Props {
-  onUpdateTimeRange: (from: number, to: number) => void;
-  isLoading?: boolean;
-  isLive?: boolean;
-  width?: string;
-  primary?: boolean;
+  getStartTime: () => DateTime;
+  onUpdateTimeRange: (from: DateTime, to: DateTime) => void;
   maxHops?: number;
 }
 
-function addTimeOffset(start: DateTime, timeOffset: string): [DateTime, DateTime] {
+function applyTimeOffset(start: DateTime, timeOffset: string, subtract?: boolean): [DateTime, DateTime] {
   const parts = timeOffset.trim().match(/^(\d+)([s|m|h|d|w|M|y])$/);
   if (parts?.length === 3) {
     const amount = parseInt(parts[1], 10);
     const duration = parts[2] as DurationUnit;
-    const from = dateTime(start).add(amount, duration);
+    const from = subtract ? dateTime(start).subtract(amount, duration) : dateTime(start).add(amount, duration);
     const to = dateTime(from).add(amount, duration).subtract(1, 's');
     return [from, to];
   }
@@ -59,77 +58,86 @@ function addTimeOffset(start: DateTime, timeOffset: string): [DateTime, DateTime
 
 export function TimeTravel(props: Props) {
   const [hops, setHops] = useState(() => 0);
-  const [timeHop, setTimeHop] = useState(() => '');
-  const [refreshInterval, setRefreshInterval] = useState(() => '');
+  const [timeHop, setTimeHop] = useState(() => '1h');
+  const [refreshInterval, setRefreshInterval] = useState((): string => '1000');
+  const [running, setRunning] = useState((): boolean => false);
 
   useInterval(
     () => {
       if (timeHop) {
-        const maxHops = props.maxHops || 2;
-        const [from, to] = addTimeOffset(getTimeSrv().timeRange().from, timeHop);
+        const maxHops = props.maxHops || 500; // need some sensible default
+        const [from, to] = applyTimeOffset(props.getStartTime(), timeHop);
         setHops(hops + 1);
-        if (hops > maxHops) {
-          setRefreshInterval('');
+        // console.log('Set time range ' + from.toISOString() + ' to ' + to.toISOString());
+        if (!from.isBefore(dateTime()) || hops > maxHops) {
+          setRunning(false);
           setHops(0);
           return;
         }
-        // TODO restrict number of hops..
-        getTimeSrv().setTime(
-          {
-            from,
-            to,
-          },
-          undefined,
-          false
-        );
+        props.onUpdateTimeRange(from, to);
       }
     },
-    refreshInterval ? parseInt(refreshInterval, 10) * 1000 : null
+    running ? parseInt(refreshInterval, 10) : null
   );
 
-  const onTimeHopChanged = useCallback(
-    (item: SelectableValue<string>) => {
-      setTimeHop(item.value!);
-    },
-    [setTimeHop]
-  );
-
-  const onRefreshIntervalChanged = useCallback(
-    (item: SelectableValue<string>) => {
-      setRefreshInterval(item.value!);
-    },
-    [setRefreshInterval]
-  );
-
-  const getVariant = (): ToolbarButtonVariant => {
-    if (props.isLive) {
-      return 'primary';
-    }
-    if (props.isLoading) {
-      return 'destructive';
-    }
-    if (props.primary) {
-      return 'primary';
-    }
-    return 'default';
+  const onTimeHopChanged = (item: SelectableValue<string>) => {
+    setTimeHop(item.value!);
   };
 
-  const currentRefreshInterval = refreshInterval || '';
-  const currentTimeHop = timeHop || '';
-  const variant = getVariant();
-  const selRefreshInterval = refreshIntervals.find(({ value }) => value === currentRefreshInterval);
-  const selTimeHop = timeHops.find(({ value }) => value === currentTimeHop);
+  const onStartStopClicked = (event: MouseEvent<HTMLButtonElement>) => {
+    setRunning(!running);
+  };
 
+  const onRefreshIntervalChanged = (item: SelectableValue<string>) => {
+    setRefreshInterval(item.value!);
+  };
+
+  const onBack = () => {
+    const [from, to] = applyTimeOffset(props.getStartTime(), timeHop, true);
+    props.onUpdateTimeRange(from, to);
+  };
+
+  const onForward = () => {
+    const [from, to] = applyTimeOffset(props.getStartTime(), timeHop);
+    props.onUpdateTimeRange(from, to);
+  };
+
+  const selRefreshInterval = refreshIntervals.find(({ value }) => value === refreshInterval);
+  const selTimeHop = timeHops.find(({ value }) => value === timeHop);
+  const variant = 'default';
   return (
     <ButtonGroup className="refresh-picker">
-      <ToolbarButton tooltip={'TODO'} variant={variant} icon={'video'} />
+      {!running && (
+        <ToolbarButton tooltip={'Go back one time step (' + timeHop + ')'} variant={variant} icon={'arrow-left'} onClick={onBack} />
+      )}
+      {!running && (
+        <ToolbarButton
+          tooltip={'Go forward one time step (' + timeHop + ')'}
+          variant={variant}
+          icon={'arrow-right'}
+          onClick={onForward}
+        />
+      )}
+      <ToolbarButton
+        tooltip={running ? 'Stop auto play' : 'Start auto play'}
+        variant={variant}
+        icon={running ? 'square' : 'play'}
+        onClick={onStartStopClicked}
+      />
       <ButtonSelect
         value={selRefreshInterval}
+        title={'Refresh interval; when auto playing the dashboard will be updated once every interval'}
         options={refreshIntervals}
         onChange={onRefreshIntervalChanged}
         variant={variant}
       />
-      <ButtonSelect value={selTimeHop} options={timeHops} onChange={onTimeHopChanged} variant={variant} />
+      <ButtonSelect
+        value={selTimeHop}
+        title={'Time step; when auto playing the dashboard date range will be shifted by this amount'}
+        options={timeHops}
+        onChange={onTimeHopChanged}
+        variant={variant}
+      />
     </ButtonGroup>
   );
 }

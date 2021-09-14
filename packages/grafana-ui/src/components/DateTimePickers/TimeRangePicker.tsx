@@ -158,12 +158,13 @@ const ZoomOutTooltip = () => (
 const TimePickerTooltip = ({ timeRange, timeZone }: { timeRange: TimeRange; timeZone?: TimeZone }) => {
   const theme = useTheme();
   const styles = getLabelStyles(theme);
-
+  // TODO make configurable... .
+  const format = 'ddd, DD-MMM-YYYY hh:mm:ss a';
   return (
     <>
-      {dateTimeFormat(timeRange.from, { timeZone })}
+      {dateTimeFormat(timeRange.from, { timeZone, format })}
       <div className="text-center">to</div>
-      {dateTimeFormat(timeRange.to, { timeZone })}
+      {dateTimeFormat(timeRange.to, { timeZone, format })}
       <div className="text-center">
         <span className={styles.utc}>{timeZoneFormatUserFriendly(timeZone)}</span>
       </div>

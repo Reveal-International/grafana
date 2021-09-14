@@ -6,6 +6,10 @@ export function findField(frame: DataFrame, name?: string): Field | undefined {
     return undefined;
   }
 
+  if (!frame || !frame.fields) {
+    return undefined;
+  }
+
   for (const field of frame.fields) {
     if (RSupport.fieldNameMatches(frame, field, name)) {
       return field;
