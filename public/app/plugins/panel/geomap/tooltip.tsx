@@ -13,7 +13,7 @@ import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '
 import { TooltipOptions } from './types';
 import { decodeGeohash } from './utils/geohash';
 import { FetchResponse, getBackendSrv } from '@grafana/runtime';
-import { map } from "rxjs/operators";
+import { map } from 'rxjs/operators';
 
 export interface ExtensionTooltipRenderProps {
   data?: DataFrame[];

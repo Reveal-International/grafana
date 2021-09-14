@@ -108,7 +108,12 @@ export function TimeTravel(props: Props) {
   return (
     <ButtonGroup className="refresh-picker">
       {!running && (
-        <ToolbarButton tooltip={'Go back one time step (' + timeHop + ')'} variant={variant} icon={'arrow-left'} onClick={onBack} />
+        <ToolbarButton
+          tooltip={'Go back one time step (' + timeHop + ')'}
+          variant={variant}
+          icon={'arrow-left'}
+          onClick={onBack}
+        />
       )}
       {!running && (
         <ToolbarButton
