@@ -55,7 +55,6 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone }: Props)
 
   const onTimeTravelVisibleChange = (visible: boolean) => {
     dashboard.timepicker.timeTravel = visible;
-    console.log("Set timeTravel " + visible);
     setRenderCounter(renderCounter + 1);
   };
 
