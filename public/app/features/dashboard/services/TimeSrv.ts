@@ -238,20 +238,22 @@ export class TimeSrv {
     }
   }
 
-  refreshDashboard() {
+  refreshDashboard(doSaveMetric?: boolean) {
     if (this.dashboard) {
-      saveMetric({
-        category: 'grafana',
-        group: 'dashboard',
-        type: 'dashboard-range-change',
-        name: this.dashboard.title,
-        values: {
-          uid: this.dashboard.uid,
-        },
-        data: {
-          timeRange: this.timeRange(),
-        },
-      });
+      if (doSaveMetric === undefined || doSaveMetric) {
+        saveMetric({
+          category: 'grafana',
+          group: 'dashboard',
+          type: 'dashboard-range-change',
+          name: this.dashboard.title,
+          values: {
+            uid: this.dashboard.uid,
+          },
+          data: {
+            timeRange: this.timeRange(),
+          },
+        });
+      }
     }
     this.dashboard?.timeRangeUpdated(this.timeRange());
   }
@@ -283,7 +285,7 @@ export class TimeSrv {
     this.setAutoRefresh(this.previousAutoRefresh);
   }
 
-  setTime(time: RawTimeRange, fromRouteUpdate?: boolean) {
+  setTime(time: RawTimeRange, fromRouteUpdate?: boolean, saveMetric?: boolean) {
     extend(this.time, time);
 
     // disable refresh if zoom in or zoom out
@@ -309,7 +311,7 @@ export class TimeSrv {
       });
     }
 
-    this.refreshDashboard();
+    this.refreshDashboard(saveMetric);
   }
 
   timeRangeForUrl = () => {

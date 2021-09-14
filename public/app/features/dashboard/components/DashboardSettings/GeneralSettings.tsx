@@ -53,6 +53,11 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone }: Props)
     setRenderCounter(renderCounter + 1);
   };
 
+  const onTimeTravelVisibleChange = (visible: boolean) => {
+    dashboard.timepicker.timeTravel = visible;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const onTimeZoneChange = (timeZone: TimeZone) => {
     dashboard.timezone = timeZone;
     setRenderCounter(renderCounter + 1);
@@ -113,8 +118,10 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone }: Props)
         onRefreshIntervalChange={onRefreshIntervalChange}
         onNowDelayChange={onNowDelayChange}
         onHideTimePickerChange={onHideTimePickerChange}
+        onTimeTravelVisibleChange={onTimeTravelVisibleChange}
         refreshIntervals={dashboard.timepicker.refresh_intervals}
         timePickerHidden={dashboard.timepicker.hidden}
+        timeTravelVisible={dashboard.timepicker.timeTravel}
         nowDelay={dashboard.timepicker.nowDelay}
         timezone={dashboard.timezone}
       />
