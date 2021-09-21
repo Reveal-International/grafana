@@ -6,8 +6,7 @@ import Sankey from 'highcharts/modules/sankey';
 import DependencyWheel from 'highcharts/modules/dependency-wheel';
 import HighchartsReact from 'highcharts-react-official';
 import { config, getBackendSrv } from '@grafana/runtime';
-import { getTimeSrv } from '../../../../../public/app/features/dashboard/services/TimeSrv';
-import { dispatch } from '../../../store/store';
+import { getTimeSrv } from 'app/features/dashboard/services/TimeSrv';
 
 Sankey(Highcharts); // Took a while to figure this out...
 DependencyWheel(Highcharts);
@@ -103,25 +102,6 @@ export function ChordPanel(props: PanelProps<ChordPanelOptions>) {
               // @ts-ignore
               size: '100%',
               allowPointSelect: true,
-              point: {
-                events: {
-                  select: function () {
-                    const type = 'APPLY_ROW_FILTER';
-                    // @ts-ignore
-                    if (this.isNode) {
-                      // @ts-ignore
-                      const { name, sum } = this;
-                      dispatch({ type, nodes: [name], value: sum });
-                    } else {
-                      // assume a link
-                      // @ts-ignore
-                      const { from, to, weight } = this;
-                      dispatch({ type, nodes: [from, to], value: weight });
-                    }
-                    return false;
-                  },
-                },
-              },
             },
           ],
         });
