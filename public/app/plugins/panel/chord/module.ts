@@ -28,5 +28,13 @@ export const plugin = new PanelPlugin<ChordPanelOptions>(ChordPanel)
         placeholder: 'title',
       },
     });
+    builder.addTextInput({
+      path: 'zoneTransitionCode',
+      name: 'Zone Transition Code',
+      description: 'Zone transition code configured in the client',
+      settings: {
+        placeholder: 'zone_transition_code',
+      },
+    });
   })
   .setNoPadding();
