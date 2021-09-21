@@ -53,6 +53,7 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn<BarChartOptions> = ({
   barWidth,
   stacking,
   text,
+  rawValue,
 }) => {
   const builder = new UPlotConfigBuilder();
   const defaultValueFormatter = (seriesIdx: number, value: any) =>
@@ -75,7 +76,7 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn<BarChartOptions> = ({
     groupWidth,
     barWidth,
     stacking,
-    rawValue: (seriesIdx: number, valueIdx: number) => frame.fields[seriesIdx].values.get(valueIdx),
+    rawValue,
     formatValue,
     text,
     showValue,
@@ -252,10 +253,16 @@ export function prepareGraphableFrames(
     };
   }
 
+  let seriesIndex = 0;
+
   for (let frame of series) {
     const fields: Field[] = [];
     for (const field of frame.fields) {
       if (field.type === FieldType.number) {
+        field.state = field.state ?? {};
+
+        field.state.seriesIndex = seriesIndex++;
+
         let copy = {
           ...field,
           config: {
