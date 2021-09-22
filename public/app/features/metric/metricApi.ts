@@ -12,6 +12,9 @@ export function saveMetric(metric: Metric) {
   if (!metric.category) {
     metric.category = 'grafana';
   }
+  if (!metric.source) {
+    metric.source = 'grafana';
+  }
   if (!metric.values) {
     metric.values = {};
   }

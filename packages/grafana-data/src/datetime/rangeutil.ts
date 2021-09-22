@@ -142,17 +142,16 @@ export function describeTextRange(expr: any) {
  * ```
  * @category TimeUtils
  * @param range - a time range (usually specified by the TimePicker)
- * @param format - time format
  * @alpha
  */
-export function describeTimeRange(range: RawTimeRange, timeZone?: TimeZone, format?: string): string {
+export function describeTimeRange(range: RawTimeRange, timeZone?: TimeZone): string {
   const option = rangeIndex[range.from.toString() + ' to ' + range.to.toString()];
 
   if (option) {
     return option.display;
   }
 
-  const options = { timeZone, format };
+  const options = { timeZone };
 
   if (isDateTime(range.from) && isDateTime(range.to)) {
     return dateTimeFormat(range.from, options) + ' to ' + dateTimeFormat(range.to, options);
