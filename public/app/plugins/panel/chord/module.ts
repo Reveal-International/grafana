@@ -1,6 +1,18 @@
-import { PanelPlugin } from '@grafana/data';
+import { PanelPlugin, SelectableValue } from '@grafana/data';
 import { ChordPanel } from './ChordPanel';
 import { ChordPanelOptions, ChordPanelType } from './types';
+import { getBackendSrv } from '@grafana/runtime';
+
+function zoneTransitionCodes(): SelectableValue[] {
+  const zoneTransitionCodes: SelectableValue[] = [];
+  getBackendSrv()
+    .get('/avenge/api/_/zone-transition/codes')
+    .then((r) => {
+      r.forEach((code: string) => zoneTransitionCodes.push({ value: code, label: code }));
+    });
+
+  return zoneTransitionCodes;
+}
 
 export const plugin = new PanelPlugin<ChordPanelOptions>(ChordPanel)
   .setPanelOptions((builder) => {
@@ -28,12 +40,12 @@ export const plugin = new PanelPlugin<ChordPanelOptions>(ChordPanel)
         placeholder: 'title',
       },
     });
-    builder.addTextInput({
+    builder.addSelect({
       path: 'zoneTransitionCode',
       name: 'Zone Transition Code',
       description: 'Zone transition code configured in the client',
       settings: {
-        placeholder: 'zone_transition_code',
+        options: zoneTransitionCodes(),
       },
     });
   })
