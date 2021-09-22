@@ -1,3 +1,5 @@
+import { SelectableValue } from '@grafana/data';
+
 import {
   SingleStatBaseOptions,
   BigValueColorMode,
@@ -11,5 +13,5 @@ export interface PopulationPanelOptions extends SingleStatBaseOptions {
   colorMode: BigValueColorMode;
   justifyMode: BigValueJustifyMode;
   textMode: BigValueTextMode;
-  populationZone: string;
+  populationZone: SelectableValue[];
 }

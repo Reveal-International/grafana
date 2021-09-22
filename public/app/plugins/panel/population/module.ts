@@ -1,8 +1,20 @@
 import { BigValueColorMode, BigValueTextMode, commonOptionsBuilder } from '@grafana/ui';
-import { PanelPlugin } from '@grafana/data';
+import { PanelPlugin, SelectableValue } from '@grafana/data';
 import { PopulationPanel } from './PopulationPanel';
 import { PopulationPanelOptions } from './types';
 import { addOrientationOption } from '../stat/types';
+import { getBackendSrv } from '@grafana/runtime';
+
+function populationZones(): SelectableValue[] {
+  const populationZones: SelectableValue[] = [];
+  getBackendSrv()
+    .get('/avenge/api/_/population/zones')
+    .then((r) => {
+      r.forEach((code: string) => populationZones.push({ value: code, label: code }));
+    });
+
+  return populationZones;
+}
 
 export const plugin = new PanelPlugin<PopulationPanelOptions>(PopulationPanel)
   .useFieldConfig()
@@ -55,13 +67,12 @@ export const plugin = new PanelPlugin<PopulationPanelOptions>(PopulationPanel)
           ],
         },
       });
-
-    builder.addTextInput({
+    builder.addSelect({
       path: 'populationZone',
       name: 'Zone code',
       description: 'Population zone code configured in the client',
       settings: {
-        placeholder: 'my_zone',
+        options: populationZones(),
       },
     });
   })
