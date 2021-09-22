@@ -6,14 +6,14 @@ import { addOrientationOption } from '../stat/types';
 import { getBackendSrv } from '@grafana/runtime';
 
 function populationZones(): SelectableValue[] {
-  const zoneTransitionCodes: SelectableValue[] = [];
+  const populationZones: SelectableValue[] = [];
   getBackendSrv()
     .get('/avenge/api/_/population/zones')
     .then((r) => {
-      r.forEach((code: string) => zoneTransitionCodes.push({ value: code, label: code }));
+      r.forEach((code: string) => populationZones.push({ value: code, label: code }));
     });
 
-  return zoneTransitionCodes;
+  return populationZones;
 }
 
 export const plugin = new PanelPlugin<PopulationPanelOptions>(PopulationPanel)
