@@ -8,6 +8,7 @@ import (
 
 type DateFormats struct {
 	FullDate         string              `json:"fullDate"`
+	NiceDate         string              `json:"niceDate"`
 	UseBrowserLocale bool                `json:"useBrowserLocale"`
 	Interval         DateFormatIntervals `json:"interval"`
 	DefaultTimezone  string              `json:"defaultTimezone"`
@@ -41,6 +42,7 @@ func valueAsTimezone(section *ini.Section, keyName string) (string, error) {
 func (cfg *Cfg) readDateFormats() {
 	dateFormats := cfg.Raw.Section("date_formats")
 	cfg.DateFormats.FullDate = valueAsString(dateFormats, "full_date", "YYYY-MM-DD HH:mm:ss")
+	cfg.DateFormats.NiceDate = valueAsString(dateFormats, "nice_date", "ddd D MMM YYYY h:mm a")
 	cfg.DateFormats.Interval.Second = valueAsString(dateFormats, "interval_second", "HH:mm:ss")
 	cfg.DateFormats.Interval.Minute = valueAsString(dateFormats, "interval_minute", "HH:mm")
 	cfg.DateFormats.Interval.Hour = valueAsString(dateFormats, "interval_hour", "MM-DD HH:mm")

@@ -21,6 +21,7 @@ import {
   TimeRange,
   TimeZone,
   dateMath,
+  systemDateFormats,
 } from '@grafana/data';
 import { Themeable } from '../../types';
 import { otherOptions, quickOptions } from './rangeOptions';
@@ -158,12 +159,12 @@ const ZoomOutTooltip = () => (
 const TimePickerTooltip = ({ timeRange, timeZone }: { timeRange: TimeRange; timeZone?: TimeZone }) => {
   const theme = useTheme();
   const styles = getLabelStyles(theme);
-
+  const format = systemDateFormats.niceDate;
   return (
     <>
-      {dateTimeFormat(timeRange.from, { timeZone })}
+      {dateTimeFormat(timeRange.from, { timeZone, format })}
       <div className="text-center">to</div>
-      {dateTimeFormat(timeRange.to, { timeZone })}
+      {dateTimeFormat(timeRange.to, { timeZone, format })}
       <div className="text-center">
         <span className={styles.utc}>{timeZoneFormatUserFriendly(timeZone)}</span>
       </div>
@@ -181,22 +182,23 @@ export const TimePickerButtonLabel = memo<LabelProps>(({ hideText, value, timeZo
     return null;
   }
 
+  const format = systemDateFormats.niceDate;
   return (
     <span className={styles.container}>
-      <span>{formattedRange(value, timeZone)}</span>
-      <span className={styles.utc}>{rangeUtil.describeTimeRangeAbbreviation(value, timeZone)}</span>
+      <span>{formattedRange(value, timeZone, format)}</span>
+      <span className={styles.utc}>{rangeUtil.describeTimeRangeAbbreviation(value, timeZone, format)}</span>
     </span>
   );
 });
 
 TimePickerButtonLabel.displayName = 'TimePickerButtonLabel';
 
-const formattedRange = (value: TimeRange, timeZone?: TimeZone) => {
+const formattedRange = (value: TimeRange, timeZone?: TimeZone, format?: string) => {
   const adjustedTimeRange = {
     to: dateMath.isMathString(value.raw.to) ? value.raw.to : value.to,
     from: dateMath.isMathString(value.raw.from) ? value.raw.from : value.from,
   };
-  return rangeUtil.describeTimeRange(adjustedTimeRange, timeZone);
+  return rangeUtil.describeTimeRange(adjustedTimeRange, timeZone, format);
 };
 
 /** @public */

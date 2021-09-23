@@ -1,5 +1,6 @@
 export interface SystemDateFormatSettings {
   fullDate: string;
+  niceDate: string;
   interval: {
     second: string;
     minute: string;
@@ -13,8 +14,11 @@ export interface SystemDateFormatSettings {
 
 const DEFAULT_SYSTEM_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
+const DEFAULT_NICE_DATE_FORMAT = 'ddd D MMM YYYY h:mm a';
+
 export class SystemDateFormatsState {
   fullDate = DEFAULT_SYSTEM_DATE_FORMAT;
+  niceDate = DEFAULT_NICE_DATE_FORMAT;
   interval = {
     second: 'HH:mm:ss',
     minute: 'HH:mm',
@@ -26,6 +30,7 @@ export class SystemDateFormatsState {
 
   update(settings: SystemDateFormatSettings) {
     this.fullDate = settings.fullDate;
+    this.niceDate = settings.niceDate;
     this.interval = settings.interval;
 
     if (settings.useBrowserLocale) {
@@ -40,6 +45,15 @@ export class SystemDateFormatsState {
 
   useBrowserLocale() {
     this.fullDate = localTimeFormat({
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    this.niceDate = localTimeFormat({
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

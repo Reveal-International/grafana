@@ -144,14 +144,14 @@ export function describeTextRange(expr: any) {
  * @param range - a time range (usually specified by the TimePicker)
  * @alpha
  */
-export function describeTimeRange(range: RawTimeRange, timeZone?: TimeZone): string {
+export function describeTimeRange(range: RawTimeRange, timeZone?: TimeZone, format?: string): string {
   const option = rangeIndex[range.from.toString() + ' to ' + range.to.toString()];
 
   if (option) {
     return option.display;
   }
 
-  const options = { timeZone };
+  const options = { timeZone, format };
 
   if (isDateTime(range.from) && isDateTime(range.to)) {
     return dateTimeFormat(range.from, options) + ' to ' + dateTimeFormat(range.to, options);
@@ -184,12 +184,12 @@ export const isValidTimeSpan = (value: string) => {
   return info.invalid !== true;
 };
 
-export const describeTimeRangeAbbreviation = (range: TimeRange, timeZone?: TimeZone) => {
+export const describeTimeRangeAbbreviation = (range: TimeRange, timeZone?: TimeZone, format?: string) => {
   if (isDateTime(range.from)) {
-    return timeZoneAbbrevation(range.from, { timeZone });
+    return timeZoneAbbrevation(range.from, { timeZone, format });
   }
   const parsed = dateMath.parse(range.from, true);
-  return parsed ? timeZoneAbbrevation(parsed, { timeZone }) : '';
+  return parsed ? timeZoneAbbrevation(parsed, { timeZone, format }) : '';
 };
 
 export const convertRawToRange = (raw: RawTimeRange, timeZone?: TimeZone): TimeRange => {
