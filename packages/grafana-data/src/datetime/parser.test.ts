@@ -9,6 +9,7 @@ describe('dateTimeParse', () => {
 
   it('should be able to parse using default format', () => {
     systemDateFormats.update({
+      niceDate: 'MMMM D, YYYY, h:mm:ss a',
       fullDate: 'MMMM D, YYYY, h:mm:ss a',
       interval: {} as any,
       useBrowserLocale: false,
