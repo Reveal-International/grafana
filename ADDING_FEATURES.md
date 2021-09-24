@@ -89,5 +89,5 @@ Check the new feature feed work to see what to update.
 
 Of some work i have done.
 
-- http://revgit.reveal.local:7990/projects/AVENGE/repos/grafana/pull-requests/32/overview
-- http://revgit.reveal.local:7990/projects/AVENGE/repos/grafana/pull-requests/34/overview
+- http://revgit.reveal.local:7990/projects/AVENGE/repos/zzz-grafana-old-main/pull-requests/32/overview
+- http://revgit.reveal.local:7990/projects/AVENGE/repos/zzz-grafana-old-main/pull-requests/34/overview

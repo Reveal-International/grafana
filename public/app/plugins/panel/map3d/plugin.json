@@ -1,0 +1,15 @@
+{
+  "type": "panel",
+  "name": "Map3d",
+  "id": "map3d",
+
+  "info": {
+    "author": {
+      "name": "Reveal"
+    },
+    "logos": {
+      "small": "img/map3d.svg",
+      "large": "img/map3d.svg"
+    }
+  }
+}

@@ -63,6 +63,7 @@ import * as logsPanel from 'app/plugins/panel/logs/module';
 import * as newsPanel from 'app/plugins/panel/news/module';
 import * as populationPanel from 'app/plugins/panel/population/module';
 import * as chordPanel from 'app/plugins/panel/chord/module';
+import * as map3dPanel from 'app/plugins/panel/map3d/module';
 import * as livePanel from 'app/plugins/panel/live/module';
 import * as debugPanel from 'app/plugins/panel/debug/module';
 import * as welcomeBanner from 'app/plugins/panel/welcome/module';
@@ -111,6 +112,7 @@ const builtInPlugins: any = {
   'app/plugins/panel/news/module': newsPanel,
   'app/plugins/panel/population/module': populationPanel,
   'app/plugins/panel/chord/module': chordPanel,
+  'app/plugins/panel/map3d/module': map3dPanel,
   'app/plugins/panel/live/module': livePanel,
   'app/plugins/panel/stat/module': statPanel,
   'app/plugins/panel/debug/module': debugPanel,
