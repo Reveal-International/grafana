@@ -23,5 +23,29 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       description: 'Map initial zoom',
       defaultValue: 15.5,
     });
+    builder.addNumberInput({
+      path: 'minHeight',
+      name: 'Min Height',
+      description: 'Min column height (meters)',
+      defaultValue: 100,
+    });
+    builder.addNumberInput({
+      path: 'maxHeight',
+      name: 'Max Height',
+      description: 'Max column height (meters)',
+      defaultValue: 500,
+    });
+    builder.addNumberInput({
+      path: 'minRadius',
+      name: 'Min Radius',
+      description: 'Min radius (meters)',
+      defaultValue: 20,
+    });
+    builder.addNumberInput({
+      path: 'maxRadius',
+      name: 'Max Radius',
+      description: 'Max radius (meters)',
+      defaultValue: 10,
+    });
   })
   .setNoPadding();

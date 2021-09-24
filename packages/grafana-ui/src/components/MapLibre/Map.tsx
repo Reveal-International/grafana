@@ -25,6 +25,7 @@ type BaseMaplibreUIProps = {
 
   pitch?: number;
   bearing?: number;
+  showNavControl?: boolean;
   /**
    * container style css properties
    */
@@ -56,6 +57,7 @@ export const Map: React.FC<MaplibreUIProps> = (props) => {
     id,
     pitch,
     bearing,
+    showNavControl,
     ...rest
   } = props;
 
@@ -79,6 +81,10 @@ export const Map: React.FC<MaplibreUIProps> = (props) => {
       zoom: defaultZoom,
       antialias: true,
     });
+
+    if (showNavControl === undefined || showNavControl) {
+      map.addControl(new MaplibreGL.NavigationControl({ showCompass: true, showZoom: true, visualizePitch: true }));
+    }
 
     const onLoad = () => setIsLoaded(true);
     map.on('load', onLoad);

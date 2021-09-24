@@ -1,9 +1,18 @@
-import { PanelProps } from '@grafana/data';
+/* eslint-disable */
+import {
+  Field,
+  getFieldColorModeForField,
+  getScaleCalculator,
+  GrafanaTheme2,
+  PanelProps
+} from '@grafana/data';
 import React from 'react';
 import * as turf from '@turf/turf';
 import { Map3dPanelOptions } from './types';
 import { Map, MapLayer, MapMarker, MapSource } from '@grafana/ui/src/components/MapLibre';
 import { FillExtrusionPaint, LngLatLike } from 'maplibre-gl';
+import { config } from 'app/core/config';
+import {decodeGeohash} from "../geomap/utils/geohash";
 
 const accessToken = 'get_your_own_OpIi9ZULNHzrESv6T2vL';
 const centerCoordinates: LngLatLike = [174.76613, -36.849034];
@@ -17,22 +26,70 @@ const extrusionPaint = {
   'fill-extrusion-opacity': 0.6,
 };
 
+function largestValue(field: Field) : number {
+  let largest = 0
+  for (let valueIndex = 0; valueIndex < field.values.length; valueIndex++) {
+    const value = field.values.get(valueIndex);
+    if (value > largest) {
+      largest = value;
+    }
+  }
+  return largest
+}
+
+function dataFrameToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOptions>) {
+  let features = [];
+  if (props.data && props.data.series) {
+    for (let dataFrameIndex = 0; dataFrameIndex < props.data.series.length; dataFrameIndex++) {
+      const dataFrame = props.data.series[dataFrameIndex];
+      if (!dataFrame.fields) {
+        continue;
+      }
+      // Assumption first field is the location as GEO JSON
+      const locationField = dataFrame.fields[0];
+      for (let valueIndex = 0; valueIndex < locationField.values.length; valueIndex++) {
+        for (let fieldIndex = 1; fieldIndex < dataFrame.fields.length; fieldIndex++) {
+          const field = dataFrame.fields[fieldIndex];
+          const max = largestValue(field);
+          // const [lat, long] = decodeGeohash(lo)
+          const coords = decodeGeohash(locationField.values.get(valueIndex));
+          const value = field.values.get(valueIndex);
+          let height = props.options.maxHeight * (value / max)
+          if (height < props.options.minHeight) {
+            height = props.options.minHeight;
+          }
+          let radius = props.options.maxRadius * (value / max)
+          if (radius < props.options.minRadius) {
+            radius = props.options.minRadius;
+          }
+          const mode = getFieldColorModeForField(field);
+          let color;
+          if (!mode.isByValue) {
+            color = mode.getCalculator(field, theme)(0, 0);
+          } else {
+            const scale = getScaleCalculator(field, theme);
+            color = scale(value).color;
+          }
+
+          const circle1 = turf.circle(coords!, radius/1000, {
+            properties: { height: height, base_height: 0, color: color},
+          });
+          features.push(circle1)
+          // console.log({fieldIndex, valueIndex, lat, long, value})
+        }
+      }
+    }
+  }
+  return {
+    type: 'FeatureCollection',
+    features: features,
+  };
+}
+
 export function Map3dPanel(props: PanelProps<Map3dPanelOptions>) {
   // TODO need to solve how we update the map when props change
   const key = `${props.options.zoom}-${props.options.pitch}-${props.options.bearing}`;
-  const circle1 = turf.circle([174.77123737335205, -36.84480417706003], 0.01, {
-    properties: { height: 200, base_height: 0, color: 'orange' },
-  });
-  const circle2 = turf.circle([174.76419925689697, -36.84820411284973], 0.02, {
-    properties: { height: 500, base_height: 0, color: 'blue' },
-  });
-  const circle3 = turf.circle([174.7786783256836, -36.84820411284973], 0.02, {
-    properties: { height: 300, base_height: 0, color: 'green' },
-  });
-  const overlay = {
-    type: 'FeatureCollection',
-    features: [circle1, circle2, circle3],
-  };
+  const overlay = dataFrameToOverlay(config.theme2, props);
   const overlayPaint = {
     // See the Mapbox Style Specification for details on data expressions.
     // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions
