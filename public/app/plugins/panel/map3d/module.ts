@@ -47,5 +47,19 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       description: 'Max radius (meters)',
       defaultValue: 10,
     });
+    builder.addSelect({
+      path: 'mapType',
+      name: 'Map Type',
+      description: '',
+      defaultValue: 'streets',
+      settings: {
+        options: [
+          { value: 'streets', label: 'Streets' },
+          { value: 'hybrid', label: 'Hybrid' },
+          { value: 'outdoor', label: 'Outdoor' },
+          { value: 'basic', label: 'Basic' },
+        ],
+      },
+    });
   })
   .setNoPadding();

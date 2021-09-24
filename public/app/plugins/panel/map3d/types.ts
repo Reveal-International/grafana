@@ -1,4 +1,5 @@
 export interface Map3dPanelOptions {
+  mapType: string;
   pitch: number;
   bearing: number;
   zoom: number;
