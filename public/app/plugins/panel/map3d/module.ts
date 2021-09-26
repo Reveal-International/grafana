@@ -24,6 +24,28 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       defaultValue: 15.5,
     });
     builder.addNumberInput({
+      path: 'initialCoords.lng',
+      name: 'Initial Longitude',
+      defaultValue: 174.76613,
+    });
+    builder.addNumberInput({
+      path: 'initialCoords.lat',
+      name: 'Initial Latitude',
+      defaultValue: -36.849034,
+    });
+    builder.addSelect({
+      path: 'displayType',
+      name: 'Display Type',
+      description: '',
+      defaultValue: 'cylinder',
+      settings: {
+        options: [
+          { value: 'cylinder', label: 'Cylinders' },
+          { value: 'donut', label: 'Donuts' },
+        ],
+      },
+    });
+    builder.addNumberInput({
       path: 'minHeight',
       name: 'Min Height',
       description: 'Min column height (meters)',
@@ -39,13 +61,13 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       path: 'minRadius',
       name: 'Min Radius',
       description: 'Min radius (meters)',
-      defaultValue: 20,
+      defaultValue: 10,
     });
     builder.addNumberInput({
       path: 'maxRadius',
       name: 'Max Radius',
       description: 'Max radius (meters)',
-      defaultValue: 10,
+      defaultValue: 20,
     });
     builder.addSelect({
       path: 'mapType',
@@ -60,6 +82,12 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
           { value: 'basic', label: 'Basic' },
         ],
       },
+    });
+    builder.addTextInput({
+      path: 'accessToken',
+      name: 'Access Token',
+      description: 'Token for map tiles',
+      defaultValue: 'get_your_own_OpIi9ZULNHzrESv6T2vL',
     });
   })
   .setNoPadding();
