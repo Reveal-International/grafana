@@ -1,11 +1,11 @@
 import { getFieldColorModeForField, getScaleCalculator, GrafanaTheme2, PanelProps } from '@grafana/data';
 import React, { useMemo } from 'react';
-import * as turf from '@turf/turf';
 import { Map3dPanelOptions } from './types';
 import { Map, MapLayer, MapSource } from '@grafana/ui/src/components/MapLibre';
-import { FillExtrusionPaint } from 'maplibre-gl';
-import { config } from 'app/core/config';
 import { dataFramesToRows, objectHash } from './utils';
+import { config } from '@grafana/runtime';
+import * as turf from '@turf/turf';
+import { CirclePaint } from 'maplibre-gl';
 
 function dataFrameToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOptions>) {
   const rows = dataFramesToRows(theme, props.data.series);
@@ -38,8 +38,8 @@ function dataFrameToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOp
 
       const radiusKm = radius / 1000;
       // Creates a circle with properties that are then extruded into a cylinder
-      const circle = turf.circle(row.location, radiusKm, {
-        properties: { height: height, base_height: baseHeight, color: color },
+      const circle = turf.point(row.location, {
+        properties: { height: height, base_height: baseHeight, color: color, radius: radiusKm },
       });
       // console.log({ column, radiusKm, height, baseHeight, color, circle });
       features.push(circle);
@@ -52,27 +52,20 @@ function dataFrameToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOp
   };
 }
 
-export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
+export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
   const key = useMemo(() => objectHash(props.options), [props.options]);
   const overlay = dataFrameToOverlay(config.theme2, props);
   const mapStyle = useMemo(() => {
     return `https://api.maptiler.com/maps/${props.options.mapType}/style.json?key=${props.options.accessToken}`;
   }, [props.options]);
-  const overlayPaint = useMemo(() => {
+  const circlePaint = useMemo((): CirclePaint => {
     return {
-      // See the Mapbox Style Specification for details on data expressions.
-      // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions
-      // Get the fill-extrusion-color from the source 'color' property.
-      'fill-extrusion-color': ['get', 'color'],
-      // Get fill-extrusion-height from the source 'height' property.
-      'fill-extrusion-height': ['get', 'height'],
-      // Get fill-extrusion-base from the source 'base_height' property.
-      'fill-extrusion-base': ['get', 'base_height'],
-      // Make extrusions slightly opaque for see through indoor walls.
-      'fill-extrusion-opacity': 0.8, // TODO make configurable
-    };
+      // Effectively as switch statement for categories.
+      'circle-color': ['get', 'color'],
+      'circle-opacity': 0.6,
+      'circle-radius': ['get', 'radius'],
+    } as CirclePaint;
   }, [props.options]);
-
   return (
     <Map
       key={key}
@@ -88,12 +81,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     >
       <MapSource type="geojson" id="overlay-source" data={overlay as GeoJSON.FeatureCollection} />
 
-      <MapLayer
-        id="overlay-extrusion"
-        type="fill-extrusion"
-        source="overlay-source"
-        paint={overlayPaint as FillExtrusionPaint}
-      />
+      <MapLayer id="overlay-circles" type="circle" source="overlay-source" paint={circlePaint} />
     </Map>
   );
 }

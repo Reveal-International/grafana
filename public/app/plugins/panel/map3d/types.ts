@@ -1,6 +1,6 @@
 import { LngLat } from 'maplibre-gl';
 
-export type DisplayType = 'cylinder' | 'donut';
+export type DisplayType = 'cylinder' | 'circle';
 
 export interface Map3dPanelOptions {
   displayType: DisplayType;
