@@ -5,6 +5,16 @@ jest.unmock('app/features/plugins/plugin_loader');
   define: jest.fn(),
 };
 
+jest.mock('maplibre-gl/dist/maplibre-gl', () => ({
+  GeolocateControl: jest.fn(),
+  Map: jest.fn(() => ({
+    addControl: jest.fn(),
+    on: jest.fn(),
+    remove: jest.fn(),
+  })),
+  NavigationControl: jest.fn(),
+}));
+
 jest.mock('app/core/core', () => {
   return {
     coreModule: {
