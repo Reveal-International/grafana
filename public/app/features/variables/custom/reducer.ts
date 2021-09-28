@@ -36,7 +36,8 @@ export const customVariableSlice = createSlice({
         if (line.endsWith(',')) {
           line = line.substr(0, line.length - 1);
         }
-        const textMatch = /^(.+)\s?:\s?(.+)$/g.exec(line) ?? [];
+        // split by : (ignore :// which is part of urls)
+        const textMatch = /^(.+)\s?:(?!\/\/)\s?(.+)$/g.exec(line) ?? [];
         if (textMatch.length === 3) {
           const [, key, value] = textMatch;
           options.push({ text: key.trim(), value: value.trim(), selected: false });
