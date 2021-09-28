@@ -42,7 +42,8 @@ describe('custom actions', () => {
             selected: false,
           },
         ],
-        query: 'A,B',
+        query: 'A\nB',
+
         multi: true,
         includeAll: false,
       };

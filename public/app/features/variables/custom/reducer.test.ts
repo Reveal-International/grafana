@@ -11,7 +11,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched with key/value syntax', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,b,c,d : e';
+      const query = 'a\nb\nc\nd : e';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'custom' });
@@ -51,7 +51,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched without key/value syntax', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,b,c,d:e';
+      const query = 'a\nb\nc\nd:e';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'custom' });
@@ -79,8 +79,8 @@ describe('customVariableReducer', () => {
                 selected: false,
               },
               {
-                text: 'd:e',
-                value: 'd:e',
+                text: 'd',
+                value: 'e',
                 selected: false,
               },
             ],
@@ -91,7 +91,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched and query with key/value syntax contains spaces', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,  b,   c, d : e  ';
+      const query = 'a\n  b\n   c\n d : e  ';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'constant' });
@@ -131,7 +131,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched and query without key/value syntax contains spaces', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,  b,   c, d :    e';
+      const query = 'a\n  b\n   c\n d :    e';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'constant' });
@@ -171,7 +171,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched and query without key/value syntax contains urls', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,  b,http://www.google.com/, http://www.amazon.com/';
+      const query = 'a\n  b\nhttp://www.google.com/\n http://www.amazon.com/';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'constant' });
@@ -211,7 +211,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched and query with key/value syntax contains urls', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,  b, google : http://www.google.com/, amazon : http://www.amazon.com/';
+      const query = 'a\n  b\n google : http://www.google.com/\n amazon : http://www.amazon.com/';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query });
       const payload = toVariablePayload({ id: '0', type: 'constant' });
@@ -251,7 +251,7 @@ describe('customVariableReducer', () => {
 
   describe('when createCustomOptionsFromQuery is dispatched and includeAll is true', () => {
     it('should then mutate state correctly', () => {
-      const query = 'a,b,c,d : e';
+      const query = 'a\nb\nc\nd : e';
       const id = '0';
       const { initialState } = getVariableTestContext(adapter, { id, query, includeAll: true });
       const payload = toVariablePayload({ id: '0', type: 'constant' });
