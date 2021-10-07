@@ -412,8 +412,8 @@ export class BackendSrv implements BackendService {
     return await this.request({ method: 'GET', url, params, requestId });
   }
 
-  async delete(url: string) {
-    return await this.request({ method: 'DELETE', url });
+  async delete(url: string, data?: any) {
+    return await this.request({ method: 'DELETE', url, data });
   }
 
   async post(url: string, data?: any) {
