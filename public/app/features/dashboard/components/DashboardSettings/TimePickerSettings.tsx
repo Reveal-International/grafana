@@ -10,12 +10,14 @@ interface Props {
   onRefreshIntervalChange: (interval: string[]) => void;
   onNowDelayChange: (nowDelay: string) => void;
   onHideTimePickerChange: (hide: boolean) => void;
+  onLiveNowChange: (liveNow: boolean) => void;
   onTimeTravelVisibleChange: (visible: boolean) => void;
   refreshIntervals: string[];
   timePickerHidden: boolean;
   timeTravelVisible: boolean;
   nowDelay: string;
   timezone: TimeZone;
+  liveNow: boolean;
 }
 
 interface State {
@@ -43,6 +45,10 @@ export class TimePickerSettings extends PureComponent<Props, State> {
 
   onHideTimePickerChange = () => {
     this.props.onHideTimePickerChange(!this.props.timePickerHidden);
+  };
+
+  onLiveNowChange = () => {
+    this.props.onLiveNowChange(!this.props.liveNow);
   };
 
   onTimeTravelVisibleChange = () => {
@@ -84,6 +90,12 @@ export class TimePickerSettings extends PureComponent<Props, State> {
         </Field>
         <Field label="Hide time picker">
           <Switch value={!!this.props.timePickerHidden} onChange={this.onHideTimePickerChange} />
+        </Field>
+        <Field
+          label="Refresh live dashboards"
+          description="Continuously re-draw panels where the time range references 'now'"
+        >
+          <Switch value={!!this.props.liveNow} onChange={this.onLiveNowChange} />
         </Field>
         <Field
           label="Show time travel"

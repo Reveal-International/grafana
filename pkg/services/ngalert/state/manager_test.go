@@ -4,23 +4,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/grafana/pkg/registry"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/services/ngalert/eval"
+	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
+	"github.com/grafana/grafana/pkg/services/ngalert/models"
+	"github.com/grafana/grafana/pkg/services/ngalert/state"
 	"github.com/grafana/grafana/pkg/services/ngalert/tests"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
-	"github.com/grafana/grafana/pkg/services/ngalert/state"
-
-	"github.com/grafana/grafana/pkg/infra/log"
-
-	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/grafana/grafana/pkg/services/ngalert/eval"
-	"github.com/grafana/grafana/pkg/services/ngalert/models"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var nilMetrics = metrics.NewMetrics(nil)
+var testMetrics = metrics.NewNGAlert(prometheus.NewPedanticRegistry())
 
 func TestProcessEvalResults(t *testing.T) {
 	evaluationTime, err := time.Parse("2006-01-02", "2021-03-25")
@@ -854,7 +851,7 @@ func TestProcessEvalResults(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		st := state.NewManager(log.New("test_state_manager"), nilMetrics, nil, nil)
+		st := state.NewManager(log.New("test_state_manager"), testMetrics.GetStateMetrics(), nil, nil)
 		t.Run(tc.desc, func(t *testing.T) {
 			for _, res := range tc.evalResults {
 				_ = st.ProcessEvalResults(tc.alertRule, res)
@@ -874,9 +871,10 @@ func TestStaleResultsHandler(t *testing.T) {
 		t.Fatalf("error parsing date format: %s", err.Error())
 	}
 
-	dbstore := tests.SetupTestEnv(t, 1)
+	_, dbstore := tests.SetupTestEnv(t, 1)
 
-	rule := tests.CreateTestAlertRule(t, dbstore, 600)
+	const mainOrgID int64 = 1
+	rule := tests.CreateTestAlertRule(t, dbstore, 600, mainOrgID)
 
 	saveCmd1 := &models.SaveAlertInstanceCommand{
 		RuleOrgID:         rule.OrgID,
@@ -900,8 +898,6 @@ func TestStaleResultsHandler(t *testing.T) {
 		CurrentStateEnd:   evaluationTime.Add(1 * time.Minute),
 	}
 	_ = dbstore.SaveAlertInstance(saveCmd2)
-
-	t.Cleanup(registry.ClearOverrides)
 
 	testCases := []struct {
 		desc               string
@@ -951,7 +947,7 @@ func TestStaleResultsHandler(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		st := state.NewManager(log.New("test_stale_results_handler"), nilMetrics, dbstore, dbstore)
+		st := state.NewManager(log.New("test_stale_results_handler"), testMetrics.GetStateMetrics(), dbstore, dbstore)
 		st.Warm()
 		existingStatesForRule := st.GetStatesForRuleUID(rule.OrgID, rule.UID)
 

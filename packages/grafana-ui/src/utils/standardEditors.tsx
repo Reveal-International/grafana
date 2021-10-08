@@ -285,6 +285,8 @@ export const getStandardFieldConfigs = () => {
 
 /**
  * Returns collection of standard option editors definitions
+ *
+ * @internal
  */
 export const getStandardOptionEditors = () => {
   const number: StandardEditorsRegistryItem<number> = {

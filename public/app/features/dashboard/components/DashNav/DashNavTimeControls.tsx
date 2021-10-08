@@ -82,6 +82,11 @@ export class DashNavTimeControls extends Component<Props> {
     this.onRefresh();
   };
 
+  onChangeFiscalYearStartMonth = (month: number) => {
+    this.props.dashboard.fiscalYearStartMonth = month;
+    this.onRefresh();
+  };
+
   onZoom = () => {
     appEvents.publish(new ZoomOutEvent(2));
   };
@@ -93,6 +98,7 @@ export class DashNavTimeControls extends Component<Props> {
 
     const timePickerValue = getTimeSrv().timeRange();
     const timeZone = dashboard.getTimezone();
+    const fiscalYearStartMonth = dashboard.fiscalYearStartMonth;
     const hideIntervalPicker = dashboard.panelInEdit?.isEditing;
 
     return (
@@ -101,10 +107,12 @@ export class DashNavTimeControls extends Component<Props> {
           value={timePickerValue}
           onChange={this.onChangeTimePicker}
           timeZone={timeZone}
+          fiscalYearStartMonth={fiscalYearStartMonth}
           onMoveBackward={this.onMoveBack}
           onMoveForward={this.onMoveForward}
           onZoom={this.onZoom}
           onChangeTimeZone={this.onChangeTimeZone}
+          onChangeFiscalYearStartMonth={this.onChangeFiscalYearStartMonth}
         />
         <RefreshPicker
           onIntervalChanged={this.onChangeRefreshInterval}

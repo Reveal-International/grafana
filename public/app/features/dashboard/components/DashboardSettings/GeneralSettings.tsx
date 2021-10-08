@@ -53,6 +53,11 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone }: Props)
     setRenderCounter(renderCounter + 1);
   };
 
+  const onLiveNowChange = (v: boolean) => {
+    dashboard.liveNow = v;
+    setRenderCounter(renderCounter + 1);
+  };
+
   const onTimeTravelVisibleChange = (visible: boolean) => {
     dashboard.timepicker.timeTravel = visible;
     setRenderCounter(renderCounter + 1);
@@ -118,12 +123,14 @@ export function GeneralSettingsUnconnected({ dashboard, updateTimeZone }: Props)
         onRefreshIntervalChange={onRefreshIntervalChange}
         onNowDelayChange={onNowDelayChange}
         onHideTimePickerChange={onHideTimePickerChange}
+        onLiveNowChange={onLiveNowChange}
         onTimeTravelVisibleChange={onTimeTravelVisibleChange}
         refreshIntervals={dashboard.timepicker.refresh_intervals}
         timePickerHidden={dashboard.timepicker.hidden}
         timeTravelVisible={dashboard.timepicker.timeTravel}
         nowDelay={dashboard.timepicker.nowDelay}
         timezone={dashboard.timezone}
+        liveNow={dashboard.liveNow}
       />
 
       <CollapsableSection label="Panel options" isOpen={true}>

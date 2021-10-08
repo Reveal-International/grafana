@@ -1,15 +1,7 @@
-import { DataFrame, Field, getDisplayProcessor, getFieldDisplayName, PanelProps } from '@grafana/data';
+import { Field, PanelProps } from '@grafana/data';
 import { config } from '@grafana/runtime';
-import {
-  TooltipDisplayMode,
-  TooltipExtension,
-  usePanelContext,
-  TimeSeries,
-  TooltipPlugin,
-  ZoomPlugin,
-  RSupport,
-  useTheme2,
-} from '@grafana/ui';
+import { TooltipDisplayMode,  } from '@grafana/schema';
+import { usePanelContext, TimeSeries, TooltipPlugin, TooltipExtension, ZoomPlugin } from '@grafana/ui';
 import { getFieldLinksForExplore } from 'app/features/explore/utils/links';
 import React, { useCallback, useMemo } from 'react';
 import { AnnotationsPlugin } from './plugins/AnnotationsPlugin';
@@ -18,6 +10,7 @@ import { ExemplarsPlugin } from './plugins/ExemplarsPlugin';
 import { TimeSeriesOptions } from './types';
 import { prepareGraphableFields } from './utils';
 import { AnnotationEditorPlugin } from './plugins/AnnotationEditorPlugin';
+import { ThresholdControlsPlugin } from './plugins/ThresholdControlsPlugin';
 import { ExtensionTooltipRender } from './tooltip';
 
 interface TimeSeriesPanelProps extends PanelProps<TimeSeriesOptions> {}
@@ -29,15 +22,16 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
   width,
   height,
   options,
+  fieldConfig,
   onChangeTimeRange,
   replaceVariables,
 }) => {
-  const { sync, canAddAnnotations } = usePanelContext();
+  const { sync, canAddAnnotations, onThresholdsChange, canEditThresholds, onSplitOpen } = usePanelContext();
 
   const theme = useTheme2();
 
   const getFieldLinks = (field: Field, rowIndex: number) => {
-    return getFieldLinksForExplore({ field, rowIndex, range: timeRange });
+    return getFieldLinksForExplore({ field, rowIndex, splitOpenFn: onSplitOpen, range: timeRange });
   };
 
   const { frames, warn } = useMemo(() => prepareGraphableFields(data?.series, config.theme2), [data]);
@@ -85,6 +79,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
   }
 
   const enableAnnotationCreation = Boolean(canAddAnnotations && canAddAnnotations());
+
   return (
     <TimeSeries
       frames={frames}
@@ -154,6 +149,14 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
                 exemplars={data.annotations}
                 timeZone={timeZone}
                 getFieldLinks={getFieldLinks}
+              />
+            )}
+
+            {canEditThresholds && onThresholdsChange && (
+              <ThresholdControlsPlugin
+                config={config}
+                fieldConfig={fieldConfig}
+                onThresholdsChange={onThresholdsChange}
               />
             )}
           </>

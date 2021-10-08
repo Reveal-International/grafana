@@ -12,8 +12,7 @@ import {
   TimeZone,
 } from '@grafana/data';
 import { preparePlotFrame as defaultPreparePlotFrame } from './utils';
-
-import { VizLegendOptions } from '../VizLegend/models.gen';
+import { VizLegendOptions } from '@grafana/schema';
 import { PanelContext, PanelContextRoot } from '../PanelChrome/PanelContext';
 import { Subscription } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
@@ -75,7 +74,7 @@ export interface GraphNGState {
 }
 
 /**
- * "Time as X" core component, expectes ascending x
+ * "Time as X" core component, expects ascending x
  */
 export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
   static contextType = PanelContextRoot;
@@ -118,7 +117,7 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
 
       state = {
         alignedFrame,
-        alignedData: config!.prepData!(alignedFrame),
+        alignedData: config!.prepData!([alignedFrame]) as AlignedData,
         config,
       };
 
@@ -141,7 +140,7 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
             const u = this.plotInstance.current;
             if (u) {
               // Try finding left position on time axis
-              const left = u.valToPos(evt.payload.point.time, 'time');
+              const left = u.valToPos(evt.payload.point.time, 'x');
               let top;
               if (left) {
                 // find midpoint between points at current idx
@@ -198,7 +197,7 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
 
         if (shouldReconfig) {
           newState.config = this.props.prepConfig(newState.alignedFrame, this.props.frames, this.getTimeRange);
-          newState.alignedData = newState.config.prepData!(newState.alignedFrame);
+          newState.alignedData = newState.config.prepData!([newState.alignedFrame]) as AlignedData;
           pluginLog('GraphNG', false, 'config recreated', newState.config);
         }
       }

@@ -16,7 +16,6 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	dboards "github.com/grafana/grafana/pkg/dashboards"
 	"github.com/grafana/grafana/pkg/models"
-	"github.com/grafana/grafana/pkg/registry"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/libraryelements"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
@@ -326,7 +325,7 @@ func TestLoadLibraryPanelsForDashboard(t *testing.T) {
 								},
 							},
 						},
-						"title": "Outside row",
+						"title": "Text - Library Panel",
 						"type":  "text",
 					},
 				},
@@ -1112,7 +1111,7 @@ func createFolderWithACL(t *testing.T, sqlStore *sqlstore.SQLStore, title string
 
 	s := dashboards.NewFolderService(user.OrgId, &user, sqlStore)
 	t.Logf("Creating folder with title and UID %q", title)
-	folder, err := s.CreateFolder(title, title)
+	folder, err := s.CreateFolder(context.Background(), title, title)
 	require.NoError(t, err)
 
 	updateFolderACL(t, sqlStore, folder.Id, items)
@@ -1193,11 +1192,7 @@ func testScenario(t *testing.T, desc string, fn func(t *testing.T, sc scenarioCo
 	t.Helper()
 
 	t.Run(desc, func(t *testing.T) {
-		t.Cleanup(registry.ClearOverrides)
-
-		ctx := macaron.Context{
-			Req: macaron.Request{Request: &http.Request{}},
-		}
+		ctx := macaron.Context{Req: &http.Request{}}
 		cfg := setting.NewCfg()
 		orgID := int64(1)
 		role := models.ROLE_ADMIN
