@@ -3,7 +3,6 @@ import { Map3dPanelOptions } from './types';
 import { Map3dPanel } from './Map3dPanel';
 
 export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
-  .useFieldConfig()
   .setPanelOptions((builder) => {
     builder.addNumberInput({
       path: 'pitch',
