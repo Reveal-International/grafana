@@ -9,6 +9,8 @@ import (
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
+
+	macaron "gopkg.in/macaron.v1"
 )
 
 // AvengeServer All objects in go are simple struct like C
@@ -43,7 +45,7 @@ func (a *AvengeServer) SetAvengeHeaders(req *http.Request, user *models.SignedIn
 
 // Handler This methods handles the proxying off the request - Note is associated with the struct above
 func (a *AvengeServer) Handler(c *models.ReqContext) {
-	proxyPath := c.Params("*")
+	proxyPath := macaron.Params(c.Req)["*"]
 	target := a.cfg.ExtAvengeUrl
 	if len(target) == 0 {
 		target = "http://localhost:8080"
@@ -67,5 +69,5 @@ func (a *AvengeServer) Handler(c *models.ReqContext) {
 	}
 	// This does all the heavy lifting for reverse proxying..
 	proxy := &httputil.ReverseProxy{Director: director}
-	proxy.ServeHTTP(c.Resp, c.Req.Request)
+	proxy.ServeHTTP(c.Resp, c.Req)
 }
