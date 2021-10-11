@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { locationService, setDataSourceSrv } from '@grafana/runtime';
-import { dateTime } from '@grafana/data';
+import { dateTime, systemDateFormats } from '@grafana/data';
 import { Provider } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { fetchSilences, fetchAlerts, createOrUpdateSilence } from './api/alertmanager';
@@ -190,8 +190,9 @@ describe('Silence edit', () => {
     const start = new Date();
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
-    const startDateString = dateTime(start).format('YYYY-MM-DD');
-    const endDateString = dateTime(end).format('YYYY-MM-DD');
+    const dateFormat = systemDateFormats.niceDate;
+    const startDateString = dateTime(start).format(dateFormat);
+    const endDateString = dateTime(end).format(dateFormat);
 
     userEvent.clear(ui.editor.durationInput.get());
     await userEvent.type(ui.editor.durationInput.get(), '1d');
