@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { TooltipDisplayMode, StackingMode } from '@grafana/schema';
+import { TooltipDisplayMode, StackingMode, TooltipExtension } from '@grafana/schema';
 import { DataFrame, PanelProps, TimeRange, VizOrientation } from '@grafana/data';
 import { TooltipPlugin, useTheme2 } from '@grafana/ui';
 import { BarChartOptions } from './types';
@@ -12,7 +12,14 @@ interface Props extends PanelProps<BarChartOptions> {}
 /**
  * @alpha
  */
-export const BarChartPanel: React.FunctionComponent<Props> = ({ data, options, width, height, timeZone, timeRange }) => {
+export const BarChartPanel: React.FunctionComponent<Props> = ({
+  data,
+  options,
+  width,
+  height,
+  timeZone,
+  timeRange,
+}) => {
   const theme = useTheme2();
 
   const { frames, warn } = useMemo(() => prepareGraphableFrames(data?.series, theme, options.stacking), [

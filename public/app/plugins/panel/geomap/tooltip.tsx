@@ -9,7 +9,8 @@ import {
   GrafanaTheme2,
   TimeRange,
 } from '@grafana/data';
-import { RSeriesTable, RSeriesTableRowProps, RSupport, TooltipExtension } from '@grafana/ui';
+import { TooltipExtension } from '@grafana/schema';
+import { RSeriesTable, RSeriesTableRowProps, RSupport } from '@grafana/ui';
 import { TooltipOptions } from './types';
 import { decodeGeohash } from './utils/geohash';
 import { FetchResponse, getBackendSrv } from '@grafana/runtime';

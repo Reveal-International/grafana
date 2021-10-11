@@ -1,7 +1,7 @@
-import { Field, PanelProps } from '@grafana/data';
+import { DataFrame, Field, getDisplayProcessor, getFieldDisplayName, PanelProps } from '@grafana/data';
 import { config } from '@grafana/runtime';
-import { TooltipDisplayMode,  } from '@grafana/schema';
-import { usePanelContext, TimeSeries, TooltipPlugin, TooltipExtension, ZoomPlugin } from '@grafana/ui';
+import { TooltipDisplayMode, TooltipExtension } from '@grafana/schema';
+import { usePanelContext, TimeSeries, TooltipPlugin, ZoomPlugin, useTheme2, RSupport } from '@grafana/ui';
 import { getFieldLinksForExplore } from 'app/features/explore/utils/links';
 import React, { useCallback, useMemo } from 'react';
 import { AnnotationsPlugin } from './plugins/AnnotationsPlugin';
