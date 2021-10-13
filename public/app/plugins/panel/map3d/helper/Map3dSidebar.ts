@@ -25,6 +25,9 @@ export function updateSidebarPopupHtml(series: Series, sidebarElement: any) {
   const promise: any = getCounterInformation(series.geoHash);
   promise.then((address: any) => {
     let map3dPopupHtml: any = map3dSidebar(series, address);
+    map3dPopupHtml.getElementsByClassName('sidebar-close')[0].addEventListener('click', () => {
+      closeSidebar();
+    });
     map3dPopupHtml.getElementsByClassName('view-chart')[0].addEventListener('click', () => {
       const sidebarBody = map3dPopupHtml.getElementsByClassName('sidebar-body')[0];
       lineChart(series, address, sidebarBody);
@@ -45,6 +48,7 @@ export function map3dSidebar(series: Series, address: string): any {
     '<div id="location-rollover">' +
     `   <div id="sidebar-geohash" style="display: none;">${series.geoHash}</div>` +
     '   <div class="sidebar-header">' +
+    '      <span class="sidebar-close">X</span>' +
     `      <div class="sidebar-title">${address}</div>` +
     '   </div>' +
     '   <div class="sidebar-body">' +
@@ -108,6 +112,27 @@ export function removeSidebarHtml() {
   Array.from(sidebars).forEach((sidebar: any) => {
     sidebar.remove();
   });
+}
+
+export function closeSidebar() {
+  const sidebarId = 'left';
+  var elem = document.getElementById(sidebarId);
+  // @ts-ignore
+  var classes = elem.className.split(' ');
+  var collapsed = classes.indexOf('collapsed') !== -1;
+
+  var padding = {};
+
+  if (!collapsed) {
+    // @ts-ignore
+    // Add the 'collapsed' class to the class list of the element
+    padding[sidebarId] = 0;
+    classes.push('collapsed');
+  }
+
+  // @ts-ignore
+  // Update the class list on the element
+  elem.className = classes.join(' ');
 }
 
 export function toggleSidebar(map: any, uniqueId: string) {
