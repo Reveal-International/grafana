@@ -8,7 +8,7 @@ import { MercatorCoordinate } from 'maplibre-gl';
 import { config } from 'app/core/config';
 import { dataFrameToSeries, getColors, objectHash, Series } from '../utils';
 import * as THREE from 'three';
-import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer';
+import { CSS2DObject, CSS2DRenderer } from '../renderer/CSS2DRenderer';
 import { createDonutChart, removeAllDonuts } from '../helper/Map3dDonut';
 import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
 
