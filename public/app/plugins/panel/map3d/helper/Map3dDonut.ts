@@ -1,13 +1,19 @@
-import { Series, formatNumber } from '../utils';
-import { config } from '@grafana/runtime';
+import { formatNumber, getColors, Series } from '../utils';
 
-function getColors(): string[] {
-  const isDarkMode = config.theme.isDark;
-  if (isDarkMode) {
-    return ['#2b908f', '#90ee7e', '#f45b5b'];
-  }
-  // Otherwise return light colors
-  return ['#058DC7', '#64E572', '#ED561B'];
+/**
+ * Donuts elements can be created as markers or layers depending on the implementation being used.
+ * This methods deletes all existing donuts in the current map document.
+ */
+export function removeAllDonuts() {
+  let donuts: any = document.getElementsByClassName('maplibregl-marker');
+  Array.from(donuts).forEach((donut: any) => {
+    donut.remove();
+  });
+
+  donuts = document.getElementsByClassName('custom-donut-layer');
+  Array.from(donuts).forEach((donut: any) => {
+    donut.remove();
+  });
 }
 
 // Creates an SVG donut chart from series

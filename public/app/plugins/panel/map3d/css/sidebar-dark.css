@@ -1,0 +1,53 @@
+#location-rollover {
+  width: 100%;
+  height: 100%;
+  background: #3e3e40;
+  border-radius: 10px;
+}
+
+.sidebar-header {
+  padding: 10px;
+  background-color: #313133;
+  border-radius: 10px 10px 0 0;
+}
+
+.sidebar-title {
+  color: #E0E0E3;
+  font-size: 20px;
+  text-transform: uppercase;
+  fill: #E0E0E3;
+  text-align: center;
+}
+
+.total-counts {
+  color: #E0E0E3;
+  font-size: 20px;
+  text-transform: uppercase;
+  fill: #E0E0E3;
+  text-align: left;
+  margin-top: 10px;
+}
+
+.series-counts {
+  color: #E0E0E3;
+  font-size: 16px;
+  fill: #E0E0E3;
+  text-align: left;
+  margin-top: 15px;
+}
+
+hr.solid {
+  border-top: 1px solid #E0E0E3;
+}
+
+.view-chart {
+  background-color: #313133;
+  border: none;
+  font-size: 20px;
+  color: #E0E0E3;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 10px;
+  margin: 0 auto;
+}

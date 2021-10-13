@@ -1,6 +1,7 @@
 import { DataFrame, Field, getLocale, PanelProps } from '@grafana/data';
 import { decodeGeohash } from '../geomap/utils/geohash';
 import { Map3dPanelOptions } from './types';
+import { config } from '../../../core/config';
 
 export function stringHash(s: string): number {
   let hash = 0;
@@ -164,4 +165,13 @@ export function dataFrameToSeries(props: PanelProps<Map3dPanelOptions>): Series[
 
 export function formatNumber(number: number, options = {}) {
   return new Intl.NumberFormat(getLocale(), options).format(number);
+}
+
+export function getColors(): string[] {
+  const isDarkMode = config.theme.isDark;
+  if (isDarkMode) {
+    return ['#2b908f', '#90ee7e', '#f45b5b'];
+  }
+  // Otherwise return light colors
+  return ['#058DC7', '#64E572', '#ED561B'];
 }

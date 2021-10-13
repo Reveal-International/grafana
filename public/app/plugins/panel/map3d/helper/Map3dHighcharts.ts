@@ -1,8 +1,15 @@
 import Highcharts from 'highcharts';
 import { Series } from '../utils';
 
-export function lineChart(series: Series, title: string): any {
-  var dom = document.createElement('div');
+// import { config } from '@grafana/runtime';
+
+export function lineChart(series: Series, title: string, container: any = {}): any {
+  if (!container) {
+    container = document.createElement('div');
+  } else {
+    // Clean element just in case
+    container.innerHTML = '';
+  }
 
   const names: string[] = ['pedestrian', 'cycle', 'scooter'];
   const highchartsData: any[] = [];
@@ -19,13 +26,12 @@ export function lineChart(series: Series, title: string): any {
 
   new Highcharts.Chart({
     chart: {
-      renderTo: dom,
+      renderTo: container,
       type: 'line',
-      width: 300,
-      height: 300,
     },
     title: {
-      text: title,
+      // @ts-ignore
+      text: null,
     },
     plotOptions: {
       series: {
@@ -54,5 +60,5 @@ export function lineChart(series: Series, title: string): any {
     series: highchartsData,
   });
 
-  return dom;
+  return container;
 }
