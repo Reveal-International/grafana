@@ -1,23 +1,7 @@
-import {
-  DataFrame,
-  Field,
-  formattedValueToString,
-  getDisplayProcessor,
-  getFieldDisplayName,
-  GrafanaTheme2,
-} from '@grafana/data';
+import { DataFrame, Field, getLocale, PanelProps } from '@grafana/data';
 import { decodeGeohash } from '../geomap/utils/geohash';
-
-export function largestValue(field: Field): number {
-  let largest = 0;
-  for (let valueIndex = 0; valueIndex < field.values.length; valueIndex++) {
-    const value = field.values.get(valueIndex);
-    if (value > largest) {
-      largest = value;
-    }
-  }
-  return largest;
-}
+import { Map3dPanelOptions } from './types';
+import { config } from '../../../core/config';
 
 export function stringHash(s: string): number {
   let hash = 0;
@@ -61,70 +45,133 @@ export interface Rows {
   largestRowTotal: number;
 }
 
-export function dataFramesToRows(theme: GrafanaTheme2, series: DataFrame[], numCategories?: number): Rows {
-  let rows: Rows = {
-    largestColumnValue: 0,
-    largestRowTotal: 0,
-    rows: [],
-  };
-  if (series) {
-    for (let dataFrameIndex = 0; dataFrameIndex < series.length; dataFrameIndex++) {
-      const dataFrame = series[dataFrameIndex];
-      if (!dataFrame.fields) {
-        continue;
+/**
+ * Series representing a location and its values
+ */
+export class Series {
+  geoHash: string;
+  coordinates: [number, number];
+  totalValue = 0;
+  values: SeriesValues[] = [];
+  private largestSeriesValue = -1;
+
+  getAggregatedSeriesValues(): number[] {
+    const aggregatedSeriesValues: number[] = [];
+
+    if (this.values) {
+      for (let i = 0; i < this.values.length; i++) {
+        const seriesValues: SeriesValues = this.values[i];
+
+        for (let x = 0; x < seriesValues.values.length; x++) {
+          const value = seriesValues.values[x];
+          aggregatedSeriesValues[x] === undefined
+            ? (aggregatedSeriesValues[x] = value)
+            : (aggregatedSeriesValues[x] += value);
+        }
       }
-      // Assumption first field is the location as GEO JSON
-      const locationField = dataFrame.fields[0];
-      for (let valueIndex = 0; valueIndex < locationField.values.length; valueIndex++) {
-        const coords = decodeGeohash(locationField.values.get(valueIndex));
-        let row: Row = {
-          index: rows.rows.length,
-          location: coords,
-          columns: [],
-          totalValue: 0,
-          largestValue: 0,
-          category: 0,
-        } as Row;
-        rows.rows.push(row);
-        for (let fieldIndex = 1; fieldIndex < dataFrame.fields.length; fieldIndex++) {
-          const field = dataFrame.fields[fieldIndex];
-          const fieldFmt = field.display || getDisplayProcessor({ field, theme });
-          const fieldValue = field.values.get(valueIndex);
-          const column = {
-            index: row.columns.length,
-            field: field,
-            fieldName: getFieldDisplayName(field, dataFrame),
-            frame: dataFrame,
-            value: fieldValue,
-            category: 0,
-            displayValue: formattedValueToString(fieldFmt(fieldValue)),
-          };
-          row.columns.push(column);
-          row.totalValue += column.value;
-          if (column.value > row.largestValue) {
-            row.largestValue = column.value;
+    }
+
+    return aggregatedSeriesValues;
+  }
+
+  getLargestSeriesValue(): number {
+    if (this.largestSeriesValue === -1) {
+      this.largestSeriesValue = Math.max(...this.getAggregatedSeriesValues());
+    }
+    return this.largestSeriesValue;
+  }
+}
+
+/**
+ * Values of a series with its corresponding datetime
+ */
+export class SeriesValues {
+  datetime: number;
+  totalValue = 0;
+  values: number[] = [];
+}
+
+export function dataFrameToSeries(props: PanelProps<Map3dPanelOptions>): Series[] {
+  const series: DataFrame[] = props.data.series;
+  const seriesByGeoHash: Map<string, Series> = new Map();
+
+  // 'series' are spread, for example, if we have 2 KPIs for a particular GeoHash, we will see 2 series with same GeoHash
+  // and its series will be a KPI with its datetimes and values
+
+  //@ts-ignore
+  // TODO use this
+  const metrics: string[] = props.data.request.targets[0].metrics;
+
+  if (series) {
+    for (let i = 0; i < series.length; i++) {
+      const serie: DataFrame = series[i];
+      //@ts-ignore
+      const geoHash: string = serie.name;
+      //@ts-ignore
+      const coordinates: [number, number] = decodeGeohash(geoHash);
+
+      //@ts-ignore
+      const datetimes: [] = serie.fields[0].values.buffer;
+      //@ts-ignore
+      const values: [] = serie.fields[1].values.buffer;
+
+      for (let datetimeIndex = 0; datetimeIndex < datetimes.length; datetimeIndex++) {
+        const datetime: number = datetimes[datetimeIndex];
+        const value: number = values[datetimeIndex];
+
+        if (seriesByGeoHash.has(geoHash)) {
+          let hasDatetime = false;
+          //@ts-ignore
+          const existingSeries: Series = seriesByGeoHash.get(geoHash);
+          existingSeries.values.forEach((existingSeriesValue: SeriesValues) => {
+            if (existingSeriesValue.datetime === datetime) {
+              //@ts-ignore
+              existingSeriesValue.values.push(value);
+              existingSeriesValue.totalValue += value;
+              hasDatetime = true;
+            }
+          });
+
+          if (!hasDatetime) {
+            // The series exists but does not have this datetime yet
+            const seriesValues: SeriesValues = new SeriesValues();
+            seriesValues.datetime = datetime;
+            seriesValues.values.push(value);
+            seriesValues.totalValue += value;
+            existingSeries.values.push(seriesValues);
           }
-          if (column.value > rows.largestColumnValue) {
-            rows.largestColumnValue = column.value;
-          }
-          if (row.totalValue > rows.largestRowTotal) {
-            rows.largestRowTotal = row.totalValue;
-          }
+
+          existingSeries.totalValue += value;
+        } else {
+          const newSeries: Series = new Series();
+          newSeries.geoHash = geoHash;
+          newSeries.coordinates = coordinates;
+          newSeries.totalValue += value;
+
+          const newSeriesValues: SeriesValues = new SeriesValues();
+          newSeriesValues.datetime = datetime;
+          newSeriesValues.values.push(value);
+          newSeriesValues.totalValue += value;
+          newSeries.values.push(newSeriesValues);
+
+          seriesByGeoHash.set(geoHash, newSeries);
         }
       }
     }
   }
-  const cats = numCategories ? numCategories : 5;
-  rows.rows.forEach((row) => {
-    if (row.totalValue > 0) {
-      row.category = Math.floor((cats * row.totalValue) / rows.largestRowTotal);
-    }
-    row.columns.forEach((column) => {
-      if (column.value > 0) {
-        column.category = Math.floor((cats * column.value) / row.largestValue);
-      }
-    });
-  });
-  console.log('Rows', rows);
-  return rows;
+
+  return Array.from(seriesByGeoHash.values());
+}
+
+export function formatNumber(number: number, options = {}) {
+  return new Intl.NumberFormat(getLocale(), options).format(number);
+}
+
+export function getColors(): string[] {
+  const isDarkMode = config.theme.isDark;
+  if (isDarkMode) {
+    return ['#2b908f', '#90ee7e', '#f45b5b'];
+  }
+  // Otherwise return light colors
+  return ['#058DC7', '#64E572', '#ED561B'];
 }
