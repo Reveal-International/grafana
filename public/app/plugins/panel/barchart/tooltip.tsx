@@ -12,11 +12,11 @@ import {
   RSeriesTableRowProps,
   RSupport,
   TooltipDisplayMode,
-  TooltipExtension,
   useTheme2,
   VizTooltipOptions,
 } from '@grafana/ui';
 import React from 'react';
+import { TooltipExtension } from '@grafana/schema';
 
 export interface ExtensionTooltipRenderProps {
   data: DataFrame[];

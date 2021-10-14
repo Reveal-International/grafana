@@ -7,14 +7,14 @@ import { defaultView, GeomapPanelOptions } from './types';
 import { mapPanelChangedHandler } from './migrations';
 import { defaultMarkersConfig } from './layers/data/markersLayer';
 import { DEFAULT_BASEMAP_CONFIG } from './layers/registry';
-import { TooltipExtension } from '@grafana/ui';
+import { TooltipExtension } from '@grafana/schema';
 
 export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
   .setNoPadding()
   .setPanelChangeHandler(mapPanelChangedHandler)
   .useFieldConfig()
   .setPanelOptions((builder) => {
-    let category = ['Map View'];
+    let category = ['Map view'];
     builder.addCustomEditor({
       category,
       id: 'view',
@@ -34,19 +34,19 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
     });
 
     builder.addCustomEditor({
-      category: ['Base Layer'],
+      category: ['Base layer'],
       id: 'basemap',
       path: 'basemap',
-      name: 'Base Layer',
+      name: 'Base layer',
       editor: BaseLayerEditor,
       defaultValue: DEFAULT_BASEMAP_CONFIG,
     });
 
     builder.addCustomEditor({
-      category: ['Data Layer'],
+      category: ['Data layer'],
       id: 'layers',
       path: 'layers',
-      name: 'Data Layer',
+      name: 'Data layer',
       editor: DataLayersEditor,
       defaultValue: [defaultMarkersConfig],
     });
@@ -117,7 +117,7 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       });
 
     // The controls section
-    category = ['Map Controls'];
+    category = ['Map controls'];
     builder
       .addBooleanSwitch({
         category,

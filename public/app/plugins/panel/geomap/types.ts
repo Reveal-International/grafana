@@ -1,7 +1,7 @@
 import { MapLayerOptions } from '@grafana/data';
-import Units from 'ol/proj/Units';
+import { Units } from 'ol/proj/Units';
 import { MapCenterID } from './view';
-import { TooltipExtension } from '@grafana/ui';
+import { TooltipExtension } from '@grafana/schema';
 
 export interface ControlsOptions {
   // Zoom (upper left)

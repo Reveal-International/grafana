@@ -29,9 +29,21 @@ To access data source settings, hover your mouse over the **Configuration** (gea
 | `Assume Role Arn`          | Specify the ARN of the role to assume                                                                                   |
 | `External ID`              | If you are assuming a role in another account, that has been created with an external ID, specify the external ID here. |
 
+### X-Ray trace links
+
+Link an X-Ray data source in the "X-Ray trace link" section of the configuration page to automatically add links in your logs when the log contains `@xrayTraceId` field.
+
+![Trace link configuration](/static/img/docs/cloudwatch/xray-trace-link-configuration-8-2.png 'Trace link configuration')
+
+The data source select will contain only existing data source instances of type X-Ray so in order to use this feature you need to have existing X-Ray data source already configured, see [X-Ray docs](https://grafana.com/grafana/plugins/grafana-x-ray-datasource/) for details.
+
+The X-Ray link will then appear in the log details section which is accessible by clicking on the log row either in Explore or in dashboard [Logs panel]({{< relref "../../visualizations/logs-panel.md" >}}). To log the `@xrayTraceId` in your logs see the [AWS X-Ray documentation](https://docs.amazonaws.cn/en_us/xray/latest/devguide/xray-services.html). To provide the field to Grafana your log queries also have to contain the `@xrayTraceId` field, for example using query `fields @message, @xrayTraceId`.
+
+![Trace link in log details](/static/img/docs/cloudwatch/xray-link-log-details-8-2.png 'Trace link in log details')
+
 ## Authentication
 
-For authentication options and configuration details, see [AWS authentication]({{< relref "aws-authentication.md" >}}) topic. 
+For authentication options and configuration details, see [AWS authentication]({{< relref "aws-authentication.md" >}}) topic.
 
 ## IAM policies
 
@@ -104,7 +116,7 @@ You can monitor a dynamic list of metrics by using the asterisk (\*) wildcard fo
 
 {{< figure src="/static/img/docs/v65/cloudwatch-dimension-wildcard.png" max-width="800px" class="docs-image--right" caption="CloudWatch dimension wildcard" >}}
 
-In this example, the query returns all metrics in the namespace `AWS/EC2` with a metric name of `CPUUtilization` and ANY value for the `InstanceId` dimension are queried. This can help you monitor metrics for AWS resources, like EC2 instances or containers. For example, when new instances are created as part of an auto scaling event, they will automatically appear in the graph without needing to track the new instance IDs. This capability is currently limited to retrieving up to 100 metrics. 
+In this example, the query returns all metrics in the namespace `AWS/EC2` with a metric name of `CPUUtilization` and ANY value for the `InstanceId` dimension are queried. This can help you monitor metrics for AWS resources, like EC2 instances or containers. For example, when new instances are created as part of an auto scaling event, they will automatically appear in the graph without needing to track the new instance IDs. This capability is currently limited to retrieving up to 100 metrics.
 
 Click on `Show Query Preview` to see the search expression that is automatically built to support wildcards. To learn more about search expressions, visit the [CloudWatch documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/search-expression-syntax.html). By default, the search expression is defined in such a way that the queried metrics must match the defined dimension names exactly. This means that in the example only metrics with exactly one dimension with name ‘InstanceId’ will be returned.
 
@@ -130,7 +142,7 @@ Please note that in the case you use the expression field to reference another q
 
 A period is the length of time associated with a specific Amazon CloudWatch statistic. Periods are defined in numbers of seconds, and valid values for period are 1, 5, 10, 30, or any multiple of 60.
 
-If the period field is left blank or set to `auto`, then it calculates automatically based on the time range. The formula used is `time range in seconds / 2000`, and then it snaps to the next higher value in an array of predefined periods `[60, 300, 900, 3600, 21600, 86400]`. By clicking `Show Query Preview` in the query editor, you can see what period Grafana used.
+If the period field is left blank or set to `auto`, then it calculates automatically based on the time range and [cloudwatch's retention policy](https://aws.amazon.com/about-aws/whats-new/2016/11/cloudwatch-extends-metrics-retention-and-new-user-interface/). The formula used is `time range in seconds / 2000`, and then it snaps to the next higher value in an array of predefined periods `[60, 300, 900, 3600, 21600, 86400]` after removing periods based on retention. By clicking `Show Query Preview` in the query editor, you can see what period Grafana used.
 
 ### Deep linking from Grafana panels to the CloudWatch console
 

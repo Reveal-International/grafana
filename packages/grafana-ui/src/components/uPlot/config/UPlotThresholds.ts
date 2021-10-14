@@ -1,7 +1,7 @@
 import { GrafanaTheme2, ThresholdsConfig, ThresholdsMode } from '@grafana/data';
+import { GraphThresholdsStyleConfig, GraphTresholdsStyleMode } from '@grafana/schema';
+import { getGradientRange, GradientDirection, scaleGradient } from './gradientFills';
 import tinycolor from 'tinycolor2';
-import { GraphThresholdsStyleConfig, GraphTresholdsStyleMode } from '../config';
-import { getThresholdRange, GradientDirection, scaleGradient } from './gradientFills';
 
 export interface UPlotThresholdOptions {
   scaleKey: string;
@@ -28,7 +28,7 @@ export function getThresholdsDrawHook(options: UPlotThresholdOptions) {
     let { steps, mode } = thresholds;
 
     if (mode === ThresholdsMode.Percentage) {
-      let [min, max] = getThresholdRange(u, scaleKey, hardMin, hardMax, softMin, softMax);
+      let [min, max] = getGradientRange(u, scaleKey, hardMin, hardMax, softMin, softMax);
       let range = max - min;
 
       steps = steps.map((step) => ({
