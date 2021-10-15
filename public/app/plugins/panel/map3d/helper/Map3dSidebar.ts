@@ -48,7 +48,7 @@ export function map3dSidebar(series: Series, address: string): any {
     '<div id="location-rollover">' +
     `   <div id="sidebar-geohash" style="display: none;">${series.geoHash}</div>` +
     '   <div class="sidebar-header">' +
-    '      <span class="sidebar-close">X</span>' +
+    '      <span class="sidebar-close" title="Close" >X</span>' +
     `      <div class="sidebar-title">${address}</div>` +
     '   </div>' +
     '   <div class="sidebar-body">' +

@@ -110,7 +110,6 @@ if (isDarkMode) {
       },
     },
     legend: {
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
       itemStyle: {
         color: '#E0E0E3',
       },
