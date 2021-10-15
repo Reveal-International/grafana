@@ -64,7 +64,7 @@ func NewApiPluginProxy(ctx *models.ReqContext, proxyPath string, route *plugins.
 
 		req.Header.Set("X-Grafana-Context", string(ctxJSON))
 
-		applyUserHeader(cfg.SendUserHeader, req, ctx.SignedInUser)
+		applyUserHeader(cfg, cfg.SendUserHeader, req, ctx.SignedInUser)
 
 		if err := addHeaders(&req.Header, route, data); err != nil {
 			ctx.JsonApiErr(500, "Failed to render plugin headers", err)

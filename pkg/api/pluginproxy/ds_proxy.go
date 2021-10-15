@@ -217,7 +217,7 @@ func (proxy *DataSourceProxy) director(req *http.Request) {
 		req.Header.Set("Authorization", dsAuth)
 	}
 
-	applyUserHeader(proxy.cfg.SendUserHeader, req, proxy.ctx.SignedInUser)
+	applyUserHeader(proxy.cfg, proxy.cfg.SendUserHeader, req, proxy.ctx.SignedInUser)
 
 	keepCookieNames := []string{}
 	if proxy.ds.JsonData != nil {

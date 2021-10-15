@@ -24,8 +24,10 @@ func NewAvengeServer(cfg *setting.Cfg) *AvengeServer {
 }
 
 func (a *AvengeServer) SetAvengeHeaders(req *http.Request, user *models.SignedInUser) {
+	// Reveal: this is duplicated in pkg/api/pluginproxy/utils.go
 	req.Header.Set("X-Grafana-User", user.Login)
 	req.Header.Set("X-Grafana-Org-Id", strconv.FormatInt(user.OrgId, 10))
+	req.Header.Set("X-Grafana-Ext-Org-Id", strconv.FormatInt(user.OrgId, 10))
 	req.Header.Set("X-Grafana-Ext-Org-Name", user.OrgName)
 	req.Header.Set("X-Grafana-Ext-User-Name", user.Name)
 	req.Header.Set("X-Grafana-Ext-User-Email", user.Email)

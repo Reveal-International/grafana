@@ -3,8 +3,10 @@ package pluginproxy
 import (
 	"bytes"
 	"fmt"
+	"github.com/grafana/grafana/pkg/setting"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"text/template"
@@ -87,15 +89,27 @@ func setBodyContent(req *http.Request, route *plugins.AppPluginRoute, data templ
 }
 
 // Set the X-Grafana-User header if needed (and remove if not)
-func applyUserHeader(sendUserHeader bool, req *http.Request, user *models.SignedInUser) {
+func applyUserHeader(cfg *setting.Cfg, sendUserHeader bool, req *http.Request, user *models.SignedInUser) {
 	req.Header.Del("X-Grafana-User")
 	if sendUserHeader && !user.IsAnonymous {
+		// Reveal: this is duplicated into pkg/api/avenge.go
 		req.Header.Set("X-Grafana-User", user.Login)
 		req.Header.Set("X-Grafana-Org-Id", strconv.FormatInt(user.OrgId, 10))
+		req.Header.Set("X-Grafana-Ext-Org-Id", strconv.FormatInt(user.OrgId, 10))
 		req.Header.Set("X-Grafana-Ext-Org-Name", user.OrgName)
 		req.Header.Set("X-Grafana-Ext-User-Name", user.Name)
 		req.Header.Set("X-Grafana-Ext-User-Email", user.Email)
 		req.Header.Set("X-Grafana-Ext-User-Id", strconv.FormatInt(user.UserId, 10))
 		req.Header.Set("X-Grafana-Ext-User-Agent", req.UserAgent())
+		req.Header.Set("X-Grafana-Ext-Remote-Addr", req.RemoteAddr)
+		req.Header.Set("X-Grafana-Ext-Admin", strconv.FormatBool(user.IsGrafanaAdmin))
+		req.Header.Set("X-Grafana-Ext-Org-Role", string(user.OrgRole))
+		if len(cfg.LoginCookieName) > 0 {
+			cookie, err := req.Cookie(cfg.LoginCookieName)
+			if err == nil {
+				val, _ := url.QueryUnescape(cookie.Value)
+				req.Header.Set("X-Grafana-Ext-Session-Id", val)
+			}
+		}
 	}
 }
