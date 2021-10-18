@@ -1,4 +1,5 @@
-import { formatNumber, getColors, Series } from '../utils';
+import { formatNumber } from '../utils';
+import { GeoHashMetricGroup } from '../metrics/metric-parser';
 
 /**
  * Donuts elements can be created as markers or layers depending on the implementation being used.
@@ -17,15 +18,18 @@ export function removeAllDonuts() {
 }
 
 // Creates an SVG donut chart from series
-export function createDonutChart(series: Series) {
+export function createDonutChart(geoHashMetricGroup: GeoHashMetricGroup) {
   var offsets = [0];
-  var total = series.totalValue;
+  var total = geoHashMetricGroup.getAggregatedMetricValues();
 
   // Set the offset values that will be used to create the donut arcs
   // Goes from 0 to next value until just 1 value before the end
-  const aggregatedSeriesValues: number[] = series.getAggregatedSeriesValues();
-  for (var i = 0; i < aggregatedSeriesValues.length - 1; i++) {
-    offsets.push(offsets[i] + aggregatedSeriesValues[i]);
+
+  const aggregatedMetricValues: number[] = geoHashMetricGroup.metrics.map((metric) =>
+    metric.getAggregatedMetricValues()
+  );
+  for (var i = 0; i < aggregatedMetricValues.length - 1; i++) {
+    offsets.push(offsets[i] + aggregatedMetricValues[i]);
   }
 
   // TODO find a way to adjust these values more accordingly
@@ -48,10 +52,10 @@ export function createDonutChart(series: Series) {
     fontSize +
     'px sans-serif; display: block">';
 
-  const colors: string[] = getColors();
+  const colors: string[] = geoHashMetricGroup.metrics.map((metric) => metric.getColor());
 
-  for (i = 0; i < aggregatedSeriesValues.length; i++) {
-    html += donutSegment(offsets[i] / total, (offsets[i] + aggregatedSeriesValues[i]) / total, r, r0, colors[i]);
+  for (i = 0; i < aggregatedMetricValues.length; i++) {
+    html += donutSegment(offsets[i] / total, (offsets[i] + aggregatedMetricValues[i]) / total, r, r0, colors[i]);
   }
 
   const totalShortFormat = formatNumber(total, { notation: 'compact', compactDisplay: 'short' });
