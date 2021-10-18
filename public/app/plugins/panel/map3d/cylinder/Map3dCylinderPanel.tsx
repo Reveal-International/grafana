@@ -10,7 +10,13 @@ import { objectHash } from '../utils';
 import * as THREE from 'three';
 import { CSS2DObject, CSS2DRenderer } from '../renderer/CSS2DRenderer';
 import { createDonutChart, removeAllDonuts } from '../helper/Map3dDonut';
-import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import {
+  getLegends,
+  getSidebarHtml,
+  removeSidebarHtml,
+  toggleSidebar,
+  updateSidebarPopupHtml,
+} from '../helper/Map3dSidebar';
 import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
 const metricsHeightMap: Map<string, number> = new Map();
@@ -174,11 +180,15 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const addLayersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
     // Update map state
     setMap(map);
+    const mapContainer = map.map.getContainer();
 
     // Add sidebar container
     const sidebarElement: any = getSidebarHtml();
-    const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
+
+    // Add legends
+    const legendsElement = getLegends(geoHashMetricGroups[0]); // First item will do as all the other items contain the same metrics
+    mapContainer.appendChild(legendsElement);
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
       const donutHtml: any = createDonutChart(geoHashMetricGroup);

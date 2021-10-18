@@ -5,7 +5,13 @@ import { Map3dPanelOptions } from '../types';
 import { Map } from '@grafana/ui/src/components/MapLibre';
 import { Marker } from 'maplibre-gl';
 import { objectHash } from '../utils';
-import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import {
+  getLegends,
+  getSidebarHtml,
+  removeSidebarHtml,
+  toggleSidebar,
+  updateSidebarPopupHtml,
+} from '../helper/Map3dSidebar';
 import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
 export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
@@ -27,10 +33,15 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
    */
   const addMarkersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
     setMap(map);
+    const mapContainer = map.map.getContainer();
+
     // Add sidebar container
     const sidebarElement: any = getSidebarHtml();
-    const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
+
+    // Add legends
+    const legendsElement = getLegends(geoHashMetricGroups[0]); // First item will do as all the other items contain the same metrics
+    mapContainer.appendChild(legendsElement);
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
       const donutHtml: any = createDonutChart(geoHashMetricGroup);
