@@ -1,77 +1,68 @@
 import '../css/sidebar-common.css';
-import { formatNumber, Series } from '../utils';
+import { formatNumber } from '../utils';
 import { lineChart } from './Map3dHighcharts';
 import { config, getBackendSrv } from '@grafana/runtime';
+import { GeoHashMetricGroup, Metric } from '../metrics/metric-parser';
 
-function getColors(): string[] {
-  const isDarkMode = config.theme.isDark;
-  if (isDarkMode) {
-    require('../css/sidebar-dark.css');
-    return ['#2b908f', '#90ee7e', '#f45b5b'];
-  }
-  // Otherwise return light colors
+const isDarkMode = config.theme.isDark;
+if (isDarkMode) {
+  require('../css/sidebar-dark.css');
+} else {
   require('../css/sidebar-light.css');
-  return ['#058DC7', '#64E572', '#ED561B'];
 }
 
 /**
  * Opens a popup with donut information such as total traffic, traffic comparison with previous dates
  */
-export function updateSidebarPopupHtml(series: Series, sidebarElement: any) {
+export function updateSidebarPopupHtml(geoHashMetricGroup: GeoHashMetricGroup, sidebarElement: any) {
   // Clean element first
   const sidebarContent = sidebarElement.getElementsByClassName('sidebar-content')[0];
   sidebarContent.innerHTML = '';
 
-  const promise: any = getCounterInformation(series.geoHash);
+  const promise: any = getCounterInformation(geoHashMetricGroup.geoHash);
   promise.then((address: any) => {
-    let map3dPopupHtml: any = map3dSidebar(series, address);
+    let map3dPopupHtml: any = map3dSidebar(geoHashMetricGroup, address);
     map3dPopupHtml.getElementsByClassName('sidebar-close')[0].addEventListener('click', () => {
       closeSidebar();
     });
     map3dPopupHtml.getElementsByClassName('view-chart')[0].addEventListener('click', () => {
       const sidebarBody = map3dPopupHtml.getElementsByClassName('sidebar-body')[0];
-      lineChart(series, address, sidebarBody);
+      lineChart(geoHashMetricGroup, address, sidebarBody);
     });
     sidebarContent.appendChild(map3dPopupHtml);
   });
 }
 
-export function map3dSidebar(series: Series, address: string): any {
+export function map3dSidebar(geoHashMetricGroup: GeoHashMetricGroup, address: string): any {
   const popup = document.createElement('div');
-  // TODO doing some assumptions here regarding the position of the KPIs (metrics)
-  // Need to improve this, but for now, the order defined should be pedestrian, cycle and scooter
-  const pedestrianPercentage: number = Math.trunc((series.getAggregatedSeriesValues()[0] / series.totalValue) * 100);
-  const cyclePercentage: number = Math.trunc((series.getAggregatedSeriesValues()[1] / series.totalValue) * 100);
-  const scooterPercentage: number = Math.trunc((series.getAggregatedSeriesValues()[2] / series.totalValue) * 100);
+
+  let seriesCount = '';
+  geoHashMetricGroup.metrics.forEach((metric: Metric) => {
+    const colorPercentage: number = Math.trunc(
+      (metric.getAggregatedMetricValues() / geoHashMetricGroup.getAggregatedMetricValues()) * 100
+    );
+    seriesCount +=
+      `<div class="series-counts">${metric.getAvailableName()} (${formatNumber(
+        metric.getAggregatedMetricValues()
+      )})</div>` +
+      '<div class="bar-container">' +
+      `   <div class="colored-bar" style="background-color: ${metric.getColor()}; width: ${colorPercentage}%">${colorPercentage}%</div>` +
+      '</div>';
+  });
 
   popup.innerHTML =
     '<div id="location-rollover">' +
-    `   <div id="sidebar-geohash" style="display: none;">${series.geoHash}</div>` +
+    `   <div id="sidebar-geohash" style="display: none;">${geoHashMetricGroup.geoHash}</div>` +
     '   <div class="sidebar-header">' +
     '      <span class="sidebar-close" title="Close" >X</span>' +
     `      <div class="sidebar-title">${address}</div>` +
     '   </div>' +
     '   <div class="sidebar-body">' +
-    `      <div class="total-counts">Total counts (${formatNumber(series.totalValue)})</div>` +
+    `      <div class="total-counts">Total counts (${formatNumber(
+      geoHashMetricGroup.getAggregatedMetricValues()
+    )})</div>` +
     '      <hr class="solid">' +
-    `      <div class="series-counts">Pedestrian (${formatNumber(series.getAggregatedSeriesValues()[0])})</div>` +
-    '      <div class="bar-container">' +
-    `         <div class="colored-bar" style="background-color: ${
-      getColors()[0]
-    }; width: ${pedestrianPercentage}%">${pedestrianPercentage}%</div>` +
-    '      </div>' +
-    `      <div class="series-counts">Cycle (${formatNumber(series.getAggregatedSeriesValues()[1])})</div>` +
-    '      <div class="bar-container">' +
-    `         <div class="colored-bar" style="background-color: ${
-      getColors()[1]
-    }; width: ${cyclePercentage}%">${cyclePercentage}%</div>` +
-    '      </div>' +
-    `      <div class="series-counts">Scooter (${formatNumber(series.getAggregatedSeriesValues()[2])})</div>` +
-    '      <div class="bar-container">' +
-    `         <div class="colored-bar" style="background-color: ${
-      getColors()[2]
-    }; width: ${scooterPercentage}%">${scooterPercentage}%</div>` +
-    '      </div>' +
+    seriesCount +
     '      <hr class="solid">' +
     '      <button class="view-chart">View chart</button>' +
     '   </div>' +

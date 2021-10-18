@@ -4,11 +4,12 @@ import { createDonutChart, removeAllDonuts } from '../helper/Map3dDonut';
 import { Map3dPanelOptions } from '../types';
 import { Map } from '@grafana/ui/src/components/MapLibre';
 import { Marker } from 'maplibre-gl';
-import { dataFrameToSeries, objectHash, Series } from '../utils';
+import { objectHash } from '../utils';
 import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
 export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
-  const [series, setSeries] = React.useState([] as Series[]);
+  const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
 
   /**
@@ -24,38 +25,38 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
    * @param series
    * @param map
    */
-  const addMarkersToMap = (seriesArray: Series[], map: any) => {
+  const addMarkersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
     setMap(map);
     // Add sidebar container
     const sidebarElement: any = getSidebarHtml();
     const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
 
-    seriesArray.forEach((series: Series) => {
-      const donutHtml: any = createDonutChart(series);
+    geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
+      const donutHtml: any = createDonutChart(geoHashMetricGroup);
       donutHtml.addEventListener('click', () => {
-        toggleSidebar(map.map, series.geoHash);
-        updateSidebarPopupHtml(series, sidebarElement);
+        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
       });
 
-      const marker: Marker = new Marker(donutHtml).setLngLat(series.coordinates);
+      const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
       marker.addTo(map.map);
     });
   };
 
   React.useEffect(() => {
-    // Update the series
-    setSeries(dataFrameToSeries(props));
-    console.log('updating series due to date range change!');
+    // Update the metrics
+    setGeoHashMetricGroups(getGeoHashMetricGroups(props));
+    console.log('updating metrics due to date range change!');
   }, [props.timeRange, map]);
 
   React.useEffect(() => {
-    // Series or map changed, updating
+    // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addMarkersToMap(series, map);
+      addMarkersToMap(geoHashMetricGroups, map);
     }
-  }, [series, map]);
+  }, [geoHashMetricGroups, map]);
 
   const key = useMemo(() => objectHash(props.options), [props.options]);
   const mapStyle = useMemo(() => {
@@ -75,7 +76,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addMarkersToMap(series, map)}
+      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map)}
     ></Map>
   );
 }

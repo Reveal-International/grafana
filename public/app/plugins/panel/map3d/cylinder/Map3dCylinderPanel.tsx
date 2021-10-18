@@ -6,55 +6,61 @@ import { Map3dPanelOptions } from '../types';
 import { Map as MapLibre, MapLayer, MapSource } from '@grafana/ui/src/components/MapLibre';
 import { MercatorCoordinate } from 'maplibre-gl';
 import { config } from 'app/core/config';
-import { dataFrameToSeries, getColors, objectHash, Series } from '../utils';
+import { objectHash } from '../utils';
 import * as THREE from 'three';
 import { CSS2DObject, CSS2DRenderer } from '../renderer/CSS2DRenderer';
 import { createDonutChart, removeAllDonuts } from '../helper/Map3dDonut';
 import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
-const seriesHeightMap: Map<string, number> = new Map();
+const metricsHeightMap: Map<string, number> = new Map();
 
 /**
- * Creates an overlay from the series, this is used as input data for the MapSource and MapLayer to create the cylinders
+ * Creates an overlay from the geo hash metric groups, this is used as input data for the MapSource and MapLayer to create the cylinders
  */
-function seriesToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOptions>, series: Series[]) {
+function geoHashMetricGroupsToOverlay(
+  theme: GrafanaTheme2,
+  props: PanelProps<Map3dPanelOptions>,
+  geoHashMetricGroups: GeoHashMetricGroup[]
+) {
   let features: any[] = [];
-  const largestSeriesValues: number = Math.max(...series.map((s) => s.getLargestSeriesValue()));
+  const largestMetricValue: number = Math.max(
+    ...geoHashMetricGroups.map((geoHashMetricGroup) => geoHashMetricGroup.getAggregatedMetricValues())
+  );
 
   // We are creating a stacked bar cylinder here
-  series.forEach((individualSeries) => {
+  geoHashMetricGroups.forEach((geoHashMetricGroup) => {
     let baseHeight = 0;
-    const aggregatedSeriesValues: number[] = individualSeries.getAggregatedSeriesValues();
-    aggregatedSeriesValues.forEach((seriesValues, index) => {
-      if (seriesValues <= 0) {
+    geoHashMetricGroup.metrics.forEach((metric, index) => {
+      if (metric.getAggregatedMetricValues() <= 0) {
         return;
       }
       // Height proportional to column
-      let height = props.options.maxHeight * (seriesValues / largestSeriesValues);
+      let height = props.options.maxHeight * (metric.getAggregatedMetricValues() / largestMetricValue);
       if (height < props.options.minHeight) {
         height = props.options.minHeight;
       }
       // Radius proportional to total value of row
-      let radius = props.options.maxRadius * (individualSeries.totalValue / largestSeriesValues);
+      let radius = props.options.maxRadius * (geoHashMetricGroup.getAggregatedMetricValues() / largestMetricValue);
       if (radius < props.options.minRadius) {
         radius = props.options.minRadius;
       }
 
       const radiusKm = radius / 1000;
       // Creates a circle with properties that are then extruded into a cylinder
-      const circle = turf.circle(individualSeries.coordinates, radiusKm, {
+      const circle = turf.circle(geoHashMetricGroup.coordinates, radiusKm, {
         properties: {
           height: baseHeight + height,
           base_height: baseHeight,
-          color: getColors()[index],
-          totalValue: individualSeries.totalValue,
+          color: metric.getColor(),
+          totalValue: geoHashMetricGroup.getAggregatedMetricValues(),
         },
       });
 
       features.push(circle);
       baseHeight += height;
     });
-    seriesHeightMap.set(individualSeries.geoHash, baseHeight);
+    metricsHeightMap.set(geoHashMetricGroup.geoHash, baseHeight);
   });
 
   return {
@@ -65,18 +71,18 @@ function seriesToOverlay(theme: GrafanaTheme2, props: PanelProps<Map3dPanelOptio
 
 export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const [customDonutLayers, setCustomDonutLayers] = React.useState([] as any);
-  const [series, setSeries] = React.useState([] as Series[]);
+  const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
   const key = useMemo(() => objectHash(props.options), [props.options]);
-  const overlay = seriesToOverlay(config.theme2, props, series);
+  const overlay = geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups);
 
   /**
    * Creates an special type of layer that is able to be rendered on certain height.
    * This layer is populated with a donut html element.
    */
-  const createLayer = (series: Series, donutHtml: any, index: any) => {
+  const createLayer = (geoHashMetricGroup: GeoHashMetricGroup, donutHtml: any, index: any) => {
     // parameters to ensure the model is geo-referenced correctly on the map
-    let modelOrigin: any = series.coordinates;
+    let modelOrigin: any = geoHashMetricGroup.coordinates;
     let modelAltitude = 0;
     let modelRotate = [Math.PI / 2, 0, 0];
 
@@ -127,7 +133,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
         // @ts-ignore
         let popupAlt = new CSS2DObject(donutHtml);
         // @ts-ignore
-        popupAlt.position.set(0, seriesHeightMap.get(series.geoHash) + 20, 0);
+        popupAlt.position.set(0, metricsHeightMap.get(geoHashMetricGroup.geoHash) + 20, 0);
         this.scene.add(popupAlt);
       },
       render: function (gl: any, matrix: any) {
@@ -165,7 +171,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   /**
    * Adds custom layers, html donuts and sidebar popup
    */
-  const addLayersToMap = (series: Series[], map: any) => {
+  const addLayersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
     // Update map state
     setMap(map);
 
@@ -174,12 +180,12 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
 
-    series.forEach((s: Series, index: number) => {
-      const donutHtml: any = createDonutChart(s);
-      const layer = createLayer(s, donutHtml, index);
+    geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
+      const donutHtml: any = createDonutChart(geoHashMetricGroup);
+      const layer = createLayer(geoHashMetricGroup, donutHtml, index);
       donutHtml.addEventListener('click', () => {
-        toggleSidebar(map.map, s.geoHash);
-        updateSidebarPopupHtml(s, sidebarElement);
+        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
       });
       map.map.addLayer(layer);
     });
@@ -207,24 +213,24 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   };
 
   /**
-   * Update series when time range changes
+   * Update metrics when time range changes
    */
   React.useEffect(() => {
-    // Update the series
-    setSeries(dataFrameToSeries(props));
-    console.log('updating series due to date range change!');
+    // Update the metrics
+    setGeoHashMetricGroups(getGeoHashMetricGroups(props));
+    console.log('updating metrics due to date range change!');
   }, [props.timeRange]);
 
   /**
    * Clean up the map (remove custom layers and html elements) and re render the custom objects
    */
   React.useEffect(() => {
-    // Series or map changed, updating
+    // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addLayersToMap(series, map);
+      addLayersToMap(geoHashMetricGroups, map);
     }
-  }, [series]);
+  }, [geoHashMetricGroups]);
 
   const mapStyle = useMemo(() => {
     return `https://api.maptiler.com/maps/${props.options.mapType}/style.json?key=${props.options.accessToken}`;
@@ -257,7 +263,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addLayersToMap(series, map)}
+      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map)}
     >
       <MapSource type="geojson" id="overlay-source" data={overlay as GeoJSON.FeatureCollection} />
       <MapLayer
