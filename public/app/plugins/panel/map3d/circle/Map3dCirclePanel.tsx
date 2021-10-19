@@ -31,7 +31,11 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
    * @param series
    * @param map
    */
-  const addMarkersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+  const addMarkersToMap = (
+    geoHashMetricGroups: GeoHashMetricGroup[],
+    map: any,
+    props: PanelProps<Map3dPanelOptions>
+  ) => {
     setMap(map);
     const mapContainer = map.map.getContainer();
 
@@ -40,8 +44,15 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     mapContainer.appendChild(sidebarElement);
 
     // Add legends
-    const legendsElement = getLegends(geoHashMetricGroups[0]); // First item will do as all the other items contain the same metrics
-    mapContainer.appendChild(legendsElement);
+    if (geoHashMetricGroups.length > 0) {
+      // First item will do as all the other items contain the same metrics
+      const legendsElement = getLegends(
+        geoHashMetricGroups[0],
+        props.options.legendPosition,
+        props.options.legendFormat
+      );
+      mapContainer.appendChild(legendsElement);
+    }
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
       const donutHtml: any = createDonutChart(geoHashMetricGroup);
@@ -65,7 +76,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addMarkersToMap(geoHashMetricGroups, map);
+      addMarkersToMap(geoHashMetricGroups, map, props);
     }
   }, [geoHashMetricGroups, map]);
 
@@ -87,7 +98,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map)}
+      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map, props)}
     ></Map>
   );
 }

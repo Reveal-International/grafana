@@ -45,6 +45,30 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
         ],
       },
     });
+    builder.addSelect({
+      path: 'legendPosition',
+      name: 'Legend position',
+      description: '',
+      defaultValue: 'Bottom right corner',
+      settings: {
+        options: [
+          { value: 'legend-bottom-right-corner', label: 'Bottom right corner' },
+          { value: 'legend-top-right-corner', label: 'Top right corner' },
+        ],
+      },
+    });
+    builder.addSelect({
+      path: 'legendFormat',
+      name: 'Legend format',
+      description: '',
+      defaultValue: 'List',
+      settings: {
+        options: [
+          { value: 'legend-list', label: 'List' },
+          { value: 'legend-flat', label: 'Flat' },
+        ],
+      },
+    });
     builder.addNumberInput({
       path: 'minHeight',
       name: 'Min Height',

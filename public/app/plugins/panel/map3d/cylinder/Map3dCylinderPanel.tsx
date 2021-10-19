@@ -177,7 +177,11 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   /**
    * Adds custom layers, html donuts and sidebar popup
    */
-  const addLayersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+  const addLayersToMap = (
+    geoHashMetricGroups: GeoHashMetricGroup[],
+    map: any,
+    props: PanelProps<Map3dPanelOptions>
+  ) => {
     // Update map state
     setMap(map);
     const mapContainer = map.map.getContainer();
@@ -187,8 +191,15 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     mapContainer.appendChild(sidebarElement);
 
     // Add legends
-    const legendsElement = getLegends(geoHashMetricGroups[0]); // First item will do as all the other items contain the same metrics
-    mapContainer.appendChild(legendsElement);
+    if (geoHashMetricGroups.length > 0) {
+      // First item will do as all the other items contain the same metrics
+      const legendsElement = getLegends(
+        geoHashMetricGroups[0],
+        props.options.legendPosition,
+        props.options.legendFormat
+      );
+      mapContainer.appendChild(legendsElement);
+    }
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
       const donutHtml: any = createDonutChart(geoHashMetricGroup);
@@ -238,7 +249,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addLayersToMap(geoHashMetricGroups, map);
+      addLayersToMap(geoHashMetricGroups, map, props);
     }
   }, [geoHashMetricGroups]);
 
@@ -273,7 +284,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map)}
+      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map, props)}
     >
       <MapSource type="geojson" id="overlay-source" data={overlay as GeoJSON.FeatureCollection} />
       <MapLayer

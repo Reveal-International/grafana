@@ -87,11 +87,11 @@ function getCounterInformation(geoHash: string) {
   });
 }
 
-export function getLegends(geoHashMetricGroup: GeoHashMetricGroup) {
-  let mapLegend = '<div class="legend">';
+export function getLegends(geoHashMetricGroup: GeoHashMetricGroup, legendPosition: string, legendFormat: string) {
+  let mapLegend = `<div class="legend ${legendPosition}">`;
 
   geoHashMetricGroup.metrics.forEach((metric) => {
-    mapLegend += `<div><span style="background-color: ${metric.getColor()}"></span>${metric.getAvailableName()}</div>`;
+    mapLegend += `<div class="legend-item ${legendFormat}"><span style="background-color: ${metric.getColor()}"></span>${metric.getAvailableName()}</div>`;
   });
   mapLegend += '</div>';
   const mapLegendContainer = document.createElement('div');
