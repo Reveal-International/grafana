@@ -56,16 +56,18 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     });
 
     filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      donutHtml.addEventListener('click', () => {
-        // @ts-ignore
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
 
-      const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
-      // @ts-ignore
-      marker.addTo(map.map);
+        const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
+        // @ts-ignore
+        marker.addTo(map.map);
+      }
     });
   };
 
@@ -99,14 +101,16 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     }
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      donutHtml.addEventListener('click', () => {
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        donutHtml.addEventListener('click', () => {
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
 
-      const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
-      marker.addTo(map.map);
+        const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
+        marker.addTo(map.map);
+      }
     });
   };
 

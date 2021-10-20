@@ -80,7 +80,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
   const key = useMemo(() => objectHash(props.options), [props.options]);
-  const overlay = geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups);
+  const [overlay, setOverlay] = React.useState([] as any);
 
   const filterDonutChart = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
     cleanupMap(map);
@@ -111,16 +111,22 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       return geoHashMetricGroup;
     });
 
+    // Update the cylinders
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, filteredGeoHashMetricGroups));
+
+    // Now update the donuts
     filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      const layer = createLayer(geoHashMetricGroup, donutHtml, index);
-      donutHtml.addEventListener('click', () => {
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        const layer = createLayer(geoHashMetricGroup, donutHtml, index);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
         // @ts-ignore
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
-      // @ts-ignore
-      map.map.addLayer(layer);
+        map.map.addLayer(layer);
+      }
     });
   };
 
@@ -224,6 +230,9 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     map: any,
     props: PanelProps<Map3dPanelOptions>
   ) => {
+    // Update the overlay
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups));
+
     // Update map state
     setMap(map);
     // @ts-ignore
@@ -246,15 +255,17 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     }
 
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      const layer = createLayer(geoHashMetricGroup, donutHtml, index);
-      donutHtml.addEventListener('click', () => {
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        const layer = createLayer(geoHashMetricGroup, donutHtml, index);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
         // @ts-ignore
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
-      // @ts-ignore
-      map.map.addLayer(layer);
+        map.map.addLayer(layer);
+      }
     });
   };
 
@@ -284,7 +295,9 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
    */
   React.useEffect(() => {
     // Update the metrics
-    setGeoHashMetricGroups(getGeoHashMetricGroups(props));
+    const geoHashMetricGroups: GeoHashMetricGroup[] = getGeoHashMetricGroups(props);
+    setGeoHashMetricGroups(geoHashMetricGroups);
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups));
     console.log('updating metrics due to date range change!');
   }, [props.timeRange]);
 
