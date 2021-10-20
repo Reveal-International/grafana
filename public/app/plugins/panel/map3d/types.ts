@@ -4,6 +4,8 @@ export type DisplayType = 'cylinder' | 'circle';
 
 export interface Map3dPanelOptions {
   displayType: DisplayType;
+  legendPosition: string;
+  legendFormat: string;
   mapType: string;
   pitch: number;
   bearing: number;

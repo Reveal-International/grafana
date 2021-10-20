@@ -5,7 +5,13 @@ import { Map3dPanelOptions } from '../types';
 import { Map } from '@grafana/ui/src/components/MapLibre';
 import { Marker } from 'maplibre-gl';
 import { objectHash } from '../utils';
-import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import {
+  getLegends,
+  getSidebarHtml,
+  removeSidebarHtml,
+  toggleSidebar,
+  updateSidebarPopupHtml,
+} from '../helper/Map3dSidebar';
 import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
 export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
@@ -20,27 +26,91 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     removeAllDonuts();
   };
 
+  const filterDonutChart = (geoHashMetricGroups: GeoHashMetricGroup[]) => {
+    cleanupMap();
+    // @ts-ignore
+    const mapContainer = map.map.getContainer();
+
+    // Add sidebar container
+    const sidebarElement: any = getSidebarHtml();
+    mapContainer.appendChild(sidebarElement);
+
+    // Find out the disable metric names from the legend
+    const disabledLegendElements: HTMLCollectionOf<Element> = document.getElementsByClassName('legend-item-disabled');
+    const disabledLegendNames = Array.from(disabledLegendElements).map((disabledLegend) => {
+      return disabledLegend.innerHTML.substring(
+        disabledLegend.innerHTML.indexOf('</span>') + 7,
+        disabledLegend.innerHTML.length
+      );
+    });
+
+    const filteredGeoHashMetricGroups: GeoHashMetricGroup[] = geoHashMetricGroups.map((geoHashMetricGroup) => {
+      // Create a copy of the geo hash metrics so we dont modify the actual one
+      geoHashMetricGroup = geoHashMetricGroup.getCopy();
+      const filteredMetrics = geoHashMetricGroup.metrics.filter(
+        (metric) => !disabledLegendNames.includes(metric.getAvailableName())
+      );
+      geoHashMetricGroup.metrics = filteredMetrics;
+
+      return geoHashMetricGroup;
+    });
+
+    filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
+
+        const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
+        // @ts-ignore
+        marker.addTo(map.map);
+      }
+    });
+  };
+
   /**
    * After map has been loaded, create the markers using the series
    * @param series
    * @param map
    */
-  const addMarkersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+  const addMarkersToMap = (
+    geoHashMetricGroups: GeoHashMetricGroup[],
+    map: any,
+    props: PanelProps<Map3dPanelOptions>
+  ) => {
     setMap(map);
+    const mapContainer = map.map.getContainer();
+
     // Add sidebar container
     const sidebarElement: any = getSidebarHtml();
-    const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
 
-    geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      donutHtml.addEventListener('click', () => {
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
+    // Add legends
+    if (geoHashMetricGroups.length > 0) {
+      // First item will do as all the other items contain the same metrics
+      const legendsElement = getLegends(
+        geoHashMetricGroups[0],
+        props.options.legendPosition,
+        props.options.legendFormat,
+        () => filterDonutChart(geoHashMetricGroups)
+      );
+      mapContainer.appendChild(legendsElement);
+    }
 
-      const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
-      marker.addTo(map.map);
+    geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        donutHtml.addEventListener('click', () => {
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
+
+        const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
+        marker.addTo(map.map);
+      }
     });
   };
 
@@ -54,7 +124,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addMarkersToMap(geoHashMetricGroups, map);
+      addMarkersToMap(geoHashMetricGroups, map, props);
     }
   }, [geoHashMetricGroups, map]);
 
@@ -76,7 +146,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map)}
+      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map, props)}
     ></Map>
   );
 }

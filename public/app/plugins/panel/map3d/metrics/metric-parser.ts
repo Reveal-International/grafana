@@ -2,7 +2,17 @@ import { DataFrame, Field, PanelProps } from '@grafana/data';
 import { Map3dPanelOptions } from '../types';
 import { decodeGeohash } from '../../geomap/utils/geohash';
 
-const defaultColors: string[] = ['red', 'blue', 'green'];
+const defaultColors: string[] = [
+  '#2b908f',
+  '#90ee7e',
+  '#f45b5b',
+  '#7798BF',
+  '#aaeeee',
+  '#ff0066',
+  '#eeaaee',
+  '#55BF3B',
+  '#DF5353',
+];
 const defaultDisplayNames: Map<string, string> = new Map([
   ['kpi-traffic-pedestrian', 'Pedestrian'],
   ['kpi-traffic-cycle', 'Cycle'],
@@ -89,6 +99,13 @@ export class GeoHashMetricGroup {
 
     return aggregatedMetricValues;
   }
+
+  getCopy(): GeoHashMetricGroup {
+    const newGeoHashMetricGroup: GeoHashMetricGroup = new GeoHashMetricGroup(this.geoHash);
+    newGeoHashMetricGroup.metrics = this.metrics;
+
+    return newGeoHashMetricGroup;
+  }
 }
 
 /**
@@ -123,8 +140,12 @@ function dataFramesParser(props: PanelProps<Map3dPanelOptions>): GeoHashMetricGr
   // @ts-ignore
   const geoHashes: string[] = fields[0].values.buffer; // Assumption first item of fields is the event location geo hash a array
 
-  // Define the amount of metrics to be processed
-  const numberOfMetrics = fields.length - 1; // -1 because the first element is the event location field
+  // Get the metrics name
+  const metrics: string[] = [];
+  // @ts-ignore
+  props.data.request.targets[0].metrics.forEach((metric) => {
+    metrics.push(metric.field);
+  });
 
   // We need to iterate over all of the geo hashes and inner loop through all of the metrics
   const geoHashMetricGroups: GeoHashMetricGroup[] = [];
@@ -132,14 +153,19 @@ function dataFramesParser(props: PanelProps<Map3dPanelOptions>): GeoHashMetricGr
     const geoHash = geoHashes[i];
     const geoHashMetricGroup: GeoHashMetricGroup = new GeoHashMetricGroup(geoHash);
 
-    for (let metricIndex = 1; metricIndex <= numberOfMetrics; metricIndex++) {
+    for (let metricIndex = 1; metricIndex <= metrics.length; metricIndex++) {
       const metricField = fields[metricIndex];
       // @ts-ignore
-      const name: string = metricField.name;
-      const displayName: string | undefined = metricField.config.displayName; // This is an override from the configuration
-      // @ts-ignore
+      const name: string = metrics[metricIndex - 1];
+      let displayName: string | undefined = metricField.config.displayName; // This is an override from the configuration
+      // If undefined try to get a default value if exists
+      if (displayName === undefined && defaultDisplayNames.has(name)) {
+        displayName = defaultDisplayNames.get(name);
+      }
+
       let color = defaultColors[metricIndex];
-      if (metricField.config.color !== undefined) {
+      // @ts-ignore
+      if (metricField.config.color.fixedColor !== undefined) {
         // @ts-ignore
         color = metricField.config.color.fixedColor; // This is an override from the configuration
       }
@@ -166,6 +192,7 @@ function datetimeDataFramesParser(props: PanelProps<Map3dPanelOptions>): GeoHash
   const series: DataFrame[] = props.data.series;
   const geoHashMetricGroupByGeoHash: Map<string, GeoHashMetricGroup> = new Map();
 
+  // Get the metrics name
   const metrics: string[] = [];
   // @ts-ignore
   props.data.request.targets[0].metrics.forEach((metric) => {

@@ -87,6 +87,41 @@ function getCounterInformation(geoHash: string) {
   });
 }
 
+export function getLegends(
+  geoHashMetricGroup: GeoHashMetricGroup,
+  legendPosition: string,
+  legendFormat: string,
+  updateData: any
+) {
+  const legendContainer = document.createElement('div');
+  legendContainer.className = `legend ${legendPosition}`;
+
+  geoHashMetricGroup.metrics.forEach((metric) => {
+    const legendItemContainer = document.createElement('div');
+    legendItemContainer.className = `legend-item ${legendFormat}`;
+    legendItemContainer.innerHTML = `<span style="background-color: ${metric.getColor()}"></span>${metric.getAvailableName()}`;
+    // @ts-ignore
+    legendItemContainer.addEventListener('click', (event) => toggleLegendItem(event, metric, legendFormat, updateData));
+
+    legendContainer.appendChild(legendItemContainer);
+  });
+
+  return legendContainer;
+}
+
+function toggleLegendItem(event: any, metric: Metric, legendFormat: string, updateData: any) {
+  const legendElement: any = event.currentTarget;
+  if (legendElement.className.includes('legend-item-disabled')) {
+    legendElement.className = `legend-item ${legendFormat}`;
+    legendElement.innerHTML = `<span style="background-color: ${metric.getColor()}"></span>${metric.getAvailableName()}`;
+  } else {
+    legendElement.innerHTML = `<span style="background-color: gray"></span>${metric.getAvailableName()}`;
+    legendElement.className += `legend-item ${legendFormat} legend-item-disabled`;
+  }
+
+  updateData();
+}
+
 export function getSidebarHtml(): any {
   const sidebars = document.createElement('div');
   sidebars.innerHTML =

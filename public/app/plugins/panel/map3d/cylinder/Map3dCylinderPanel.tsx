@@ -10,7 +10,13 @@ import { objectHash } from '../utils';
 import * as THREE from 'three';
 import { CSS2DObject, CSS2DRenderer } from '../renderer/CSS2DRenderer';
 import { createDonutChart, removeAllDonuts } from '../helper/Map3dDonut';
-import { getSidebarHtml, removeSidebarHtml, toggleSidebar, updateSidebarPopupHtml } from '../helper/Map3dSidebar';
+import {
+  getLegends,
+  getSidebarHtml,
+  removeSidebarHtml,
+  toggleSidebar,
+  updateSidebarPopupHtml,
+} from '../helper/Map3dSidebar';
 import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
 const metricsHeightMap: Map<string, number> = new Map();
@@ -74,7 +80,55 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
   const key = useMemo(() => objectHash(props.options), [props.options]);
-  const overlay = geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups);
+  const [overlay, setOverlay] = React.useState([] as any);
+
+  const filterDonutChart = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+    cleanupMap(map);
+    // @ts-ignore
+    const mapContainer = map.map.getContainer();
+
+    // Add sidebar container
+    const sidebarElement: any = getSidebarHtml();
+    mapContainer.appendChild(sidebarElement);
+
+    // Find out the disable metric names from the legend
+    const disabledLegendElements: HTMLCollectionOf<Element> = document.getElementsByClassName('legend-item-disabled');
+    const disabledLegendNames = Array.from(disabledLegendElements).map((disabledLegend) => {
+      return disabledLegend.innerHTML.substring(
+        disabledLegend.innerHTML.indexOf('</span>') + 7,
+        disabledLegend.innerHTML.length
+      );
+    });
+
+    const filteredGeoHashMetricGroups: GeoHashMetricGroup[] = geoHashMetricGroups.map((geoHashMetricGroup) => {
+      // Create a copy of the geo hash metrics so we dont modify the actual one
+      geoHashMetricGroup = geoHashMetricGroup.getCopy();
+      const filteredMetrics = geoHashMetricGroup.metrics.filter(
+        (metric) => !disabledLegendNames.includes(metric.getAvailableName())
+      );
+      geoHashMetricGroup.metrics = filteredMetrics;
+
+      return geoHashMetricGroup;
+    });
+
+    // Update the cylinders
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, filteredGeoHashMetricGroups));
+
+    // Now update the donuts
+    filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        const layer = createLayer(geoHashMetricGroup, donutHtml, index);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
+        // @ts-ignore
+        map.map.addLayer(layer);
+      }
+    });
+  };
 
   /**
    * Creates an special type of layer that is able to be rendered on certain height.
@@ -171,30 +225,54 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   /**
    * Adds custom layers, html donuts and sidebar popup
    */
-  const addLayersToMap = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+  const addLayersToMap = (
+    geoHashMetricGroups: GeoHashMetricGroup[],
+    map: any,
+    props: PanelProps<Map3dPanelOptions>
+  ) => {
+    // Update the overlay
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups));
+
     // Update map state
     setMap(map);
+    // @ts-ignore
+    const mapContainer = map.map.getContainer();
 
     // Add sidebar container
     const sidebarElement: any = getSidebarHtml();
-    const mapContainer = map.map.getContainer();
     mapContainer.appendChild(sidebarElement);
 
+    // Add legends
+    if (geoHashMetricGroups.length > 0) {
+      // First item will do as all the other items contain the same metrics
+      const legendsElement = getLegends(
+        geoHashMetricGroups[0],
+        props.options.legendPosition,
+        props.options.legendFormat,
+        () => filterDonutChart(geoHashMetricGroups, map)
+      );
+      mapContainer.appendChild(legendsElement);
+    }
+
     geoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
-      const donutHtml: any = createDonutChart(geoHashMetricGroup);
-      const layer = createLayer(geoHashMetricGroup, donutHtml, index);
-      donutHtml.addEventListener('click', () => {
-        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
-        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
-      });
-      map.map.addLayer(layer);
+      if (geoHashMetricGroup.getAggregatedMetricValues() > 0) {
+        const donutHtml: any = createDonutChart(geoHashMetricGroup);
+        const layer = createLayer(geoHashMetricGroup, donutHtml, index);
+        donutHtml.addEventListener('click', () => {
+          // @ts-ignore
+          toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+          updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+        });
+        // @ts-ignore
+        map.map.addLayer(layer);
+      }
     });
   };
 
   /**
    * Removes all markers and custom html elements from map.
    */
-  const cleanupMap = () => {
+  const cleanupMap = (map: any) => {
     removeSidebarHtml();
 
     customDonutLayers.forEach((customDonutLayer: any) => {
@@ -217,7 +295,9 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
    */
   React.useEffect(() => {
     // Update the metrics
-    setGeoHashMetricGroups(getGeoHashMetricGroups(props));
+    const geoHashMetricGroups: GeoHashMetricGroup[] = getGeoHashMetricGroups(props);
+    setGeoHashMetricGroups(geoHashMetricGroups);
+    setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups));
     console.log('updating metrics due to date range change!');
   }, [props.timeRange]);
 
@@ -226,9 +306,9 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
    */
   React.useEffect(() => {
     // Metrics or map changed, updating
-    cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addLayersToMap(geoHashMetricGroups, map);
+      cleanupMap(map);
+      addLayersToMap(geoHashMetricGroups, map, props);
     }
   }, [geoHashMetricGroups]);
 
@@ -263,7 +343,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       pitch={props.options.pitch}
       bearing={props.options.bearing}
       defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map)}
+      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map, props)}
     >
       <MapSource type="geojson" id="overlay-source" data={overlay as GeoJSON.FeatureCollection} />
       <MapLayer

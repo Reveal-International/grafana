@@ -126,9 +126,7 @@ if (isDarkMode) {
       },
     },
     credits: {
-      style: {
-        color: '#666',
-      },
+      enabled: false,
     },
     // @ts-ignore
     labels: {
@@ -253,6 +251,7 @@ export function ChordPanel(props: PanelProps<ChordPanelOptions>) {
           chart: {
             width: props.width,
             height: props.height,
+            backgroundColor: 'transparent',
           },
           credits: { enabled: false },
           title: {

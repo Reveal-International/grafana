@@ -36,9 +36,6 @@ export function lineChart(geoHashMetricGroup: GeoHashMetricGroup, title: string,
         },
       },
     },
-    credits: {
-      enabled: false,
-    },
     legend: {
       useHTML: true,
       labelFormatter: function () {
