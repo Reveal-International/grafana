@@ -26,6 +26,49 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     removeAllDonuts();
   };
 
+  const filterDonutChart = (geoHashMetricGroups: GeoHashMetricGroup[]) => {
+    cleanupMap();
+    // @ts-ignore
+    const mapContainer = map.map.getContainer();
+
+    // Add sidebar container
+    const sidebarElement: any = getSidebarHtml();
+    mapContainer.appendChild(sidebarElement);
+
+    // Find out the disable metric names from the legend
+    const disabledLegendElements: HTMLCollectionOf<Element> = document.getElementsByClassName('legend-item-disabled');
+    const disabledLegendNames = Array.from(disabledLegendElements).map((disabledLegend) => {
+      return disabledLegend.innerHTML.substring(
+        disabledLegend.innerHTML.indexOf('</span>') + 7,
+        disabledLegend.innerHTML.length
+      );
+    });
+
+    const filteredGeoHashMetricGroups: GeoHashMetricGroup[] = geoHashMetricGroups.map((geoHashMetricGroup) => {
+      // Create a copy of the geo hash metrics so we dont modify the actual one
+      geoHashMetricGroup = geoHashMetricGroup.getCopy();
+      const filteredMetrics = geoHashMetricGroup.metrics.filter(
+        (metric) => !disabledLegendNames.includes(metric.getAvailableName())
+      );
+      geoHashMetricGroup.metrics = filteredMetrics;
+
+      return geoHashMetricGroup;
+    });
+
+    filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup) => {
+      const donutHtml: any = createDonutChart(geoHashMetricGroup);
+      donutHtml.addEventListener('click', () => {
+        // @ts-ignore
+        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+      });
+
+      const marker: Marker = new Marker(donutHtml).setLngLat(geoHashMetricGroup.coordinates);
+      // @ts-ignore
+      marker.addTo(map.map);
+    });
+  };
+
   /**
    * After map has been loaded, create the markers using the series
    * @param series
@@ -49,7 +92,8 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
       const legendsElement = getLegends(
         geoHashMetricGroups[0],
         props.options.legendPosition,
-        props.options.legendFormat
+        props.options.legendFormat,
+        () => filterDonutChart(geoHashMetricGroups)
       );
       mapContainer.appendChild(legendsElement);
     }

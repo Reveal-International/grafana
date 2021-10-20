@@ -29,7 +29,7 @@ if (isDarkMode) {
       '#aaeeee',
     ],
     chart: {
-      backgroundColor: '#3e3e40',
+      backgroundColor: 'transparent',
       style: {
         fontFamily: "'Unica One', sans-serif",
       },
@@ -126,9 +126,7 @@ if (isDarkMode) {
       },
     },
     credits: {
-      style: {
-        color: '#666',
-      },
+      enabled: false,
     },
     // @ts-ignore
     labels: {
@@ -253,6 +251,7 @@ export function ChordPanel(props: PanelProps<ChordPanelOptions>) {
           chart: {
             width: props.width,
             height: props.height,
+            backgroundColor: 'transparent',
           },
           credits: { enabled: false },
           title: {

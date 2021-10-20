@@ -82,6 +82,48 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const key = useMemo(() => objectHash(props.options), [props.options]);
   const overlay = geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups);
 
+  const filterDonutChart = (geoHashMetricGroups: GeoHashMetricGroup[], map: any) => {
+    cleanupMap(map);
+    // @ts-ignore
+    const mapContainer = map.map.getContainer();
+
+    // Add sidebar container
+    const sidebarElement: any = getSidebarHtml();
+    mapContainer.appendChild(sidebarElement);
+
+    // Find out the disable metric names from the legend
+    const disabledLegendElements: HTMLCollectionOf<Element> = document.getElementsByClassName('legend-item-disabled');
+    const disabledLegendNames = Array.from(disabledLegendElements).map((disabledLegend) => {
+      return disabledLegend.innerHTML.substring(
+        disabledLegend.innerHTML.indexOf('</span>') + 7,
+        disabledLegend.innerHTML.length
+      );
+    });
+
+    const filteredGeoHashMetricGroups: GeoHashMetricGroup[] = geoHashMetricGroups.map((geoHashMetricGroup) => {
+      // Create a copy of the geo hash metrics so we dont modify the actual one
+      geoHashMetricGroup = geoHashMetricGroup.getCopy();
+      const filteredMetrics = geoHashMetricGroup.metrics.filter(
+        (metric) => !disabledLegendNames.includes(metric.getAvailableName())
+      );
+      geoHashMetricGroup.metrics = filteredMetrics;
+
+      return geoHashMetricGroup;
+    });
+
+    filteredGeoHashMetricGroups.forEach((geoHashMetricGroup: GeoHashMetricGroup, index: number) => {
+      const donutHtml: any = createDonutChart(geoHashMetricGroup);
+      const layer = createLayer(geoHashMetricGroup, donutHtml, index);
+      donutHtml.addEventListener('click', () => {
+        // @ts-ignore
+        toggleSidebar(map.map, geoHashMetricGroup.geoHash);
+        updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
+      });
+      // @ts-ignore
+      map.map.addLayer(layer);
+    });
+  };
+
   /**
    * Creates an special type of layer that is able to be rendered on certain height.
    * This layer is populated with a donut html element.
@@ -184,6 +226,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   ) => {
     // Update map state
     setMap(map);
+    // @ts-ignore
     const mapContainer = map.map.getContainer();
 
     // Add sidebar container
@@ -196,7 +239,8 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       const legendsElement = getLegends(
         geoHashMetricGroups[0],
         props.options.legendPosition,
-        props.options.legendFormat
+        props.options.legendFormat,
+        () => filterDonutChart(geoHashMetricGroups, map)
       );
       mapContainer.appendChild(legendsElement);
     }
@@ -205,9 +249,11 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
       const donutHtml: any = createDonutChart(geoHashMetricGroup);
       const layer = createLayer(geoHashMetricGroup, donutHtml, index);
       donutHtml.addEventListener('click', () => {
+        // @ts-ignore
         toggleSidebar(map.map, geoHashMetricGroup.geoHash);
         updateSidebarPopupHtml(geoHashMetricGroup, sidebarElement);
       });
+      // @ts-ignore
       map.map.addLayer(layer);
     });
   };
@@ -215,7 +261,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   /**
    * Removes all markers and custom html elements from map.
    */
-  const cleanupMap = () => {
+  const cleanupMap = (map: any) => {
     removeSidebarHtml();
 
     customDonutLayers.forEach((customDonutLayer: any) => {
@@ -247,8 +293,8 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
    */
   React.useEffect(() => {
     // Metrics or map changed, updating
-    cleanupMap();
     if (Object.keys(map).length !== 0) {
+      cleanupMap(map);
       addLayersToMap(geoHashMetricGroups, map, props);
     }
   }, [geoHashMetricGroups]);

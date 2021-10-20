@@ -89,6 +89,13 @@ export class GeoHashMetricGroup {
 
     return aggregatedMetricValues;
   }
+
+  getCopy(): GeoHashMetricGroup {
+    const newGeoHashMetricGroup: GeoHashMetricGroup = new GeoHashMetricGroup(this.geoHash);
+    newGeoHashMetricGroup.metrics = this.metrics;
+
+    return newGeoHashMetricGroup;
+  }
 }
 
 /**
