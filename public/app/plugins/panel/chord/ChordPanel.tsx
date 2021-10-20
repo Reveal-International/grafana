@@ -29,7 +29,7 @@ if (isDarkMode) {
       '#aaeeee',
     ],
     chart: {
-      backgroundColor: '#3e3e40',
+      backgroundColor: 'transparent',
       style: {
         fontFamily: "'Unica One', sans-serif",
       },
