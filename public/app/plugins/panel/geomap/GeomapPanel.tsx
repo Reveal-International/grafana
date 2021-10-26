@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import { DEFAULT_BASEMAP_CONFIG, geomapLayerRegistry, defaultBaseLayer } from './layers/registry';
+import { DEFAULT_BASEMAP_CONFIG, defaultBaseLayer, geomapLayerRegistry } from './layers/registry';
 import { Map, MapBrowserEvent, View } from 'ol';
 import Attribution from 'ol/control/Attribution';
 import Zoom from 'ol/control/Zoom';
@@ -9,21 +9,30 @@ import { defaults as interactionDefaults } from 'ol/interaction';
 import MouseWheelZoom from 'ol/interaction/MouseWheelZoom';
 
 import {
-  PanelData,
-  MapLayerHandler,
-  MapLayerOptions,
-  PanelProps,
-  GrafanaTheme,
+  DataFrame,
   DataHoverClearEvent,
   DataHoverEvent,
-  DataFrame,
+  GrafanaTheme,
+  MapLayerHandler,
+  MapLayerOptions,
+  PanelData,
+  PanelProps,
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { ControlsOptions, GeomapPanelOptions, MapViewConfig } from './types';
+import { ControlsOptions, GeomapPanelOptions, ImageLayerConfig, MapViewConfig } from './types';
 import { centerPointRegistry, MapCenterID } from './view';
-import { fromLonLat, toLonLat } from 'ol/proj';
-import { Coordinate } from 'ol/coordinate';
+import {
+  addCoordinateTransforms,
+  addProjection,
+  fromLonLat,
+  get as getProjection,
+  toLonLat,
+  transform,
+  transformExtent,
+} from 'ol/proj';
+import Projection from 'ol/proj/Projection';
+import { Coordinate, rotate } from 'ol/coordinate';
 import { css } from '@emotion/css';
 import { Portal, stylesFactory, VizTooltipContainer } from '@grafana/ui';
 import { GeomapOverlay, OverlayProps } from './GeomapOverlay';
@@ -33,6 +42,9 @@ import { Global } from '@emotion/react';
 import { GeomapHoverFeature, GeomapHoverPayload } from './event';
 import { DataHoverView } from './components/DataHoverView';
 import { ExtensionTooltipRender } from './tooltip';
+import ImageLayer from 'ol/layer/Image';
+import Static from 'ol/source/ImageStatic';
+import { getCenter } from 'ol/extent';
 
 interface MapLayerState {
   config: MapLayerOptions;
@@ -141,7 +153,13 @@ export class GeomapPanel extends Component<Props, State> {
       layersChanged = true;
     }
 
-    if (options.layers !== oldOptions.layers) {
+    if (options.imageLayer !== oldOptions.imageLayer) {
+      console.log('image layer changed');
+      this.initImageLayer(options.imageLayer); // async
+      layersChanged = true;
+    }
+
+    if (options.layers !== oldOptions.layers || layersChanged) {
       console.log('layers changed');
       this.initLayers(options.layers ?? []); // async
       layersChanged = true;
@@ -188,6 +206,7 @@ export class GeomapPanel extends Component<Props, State> {
     this.map.addInteraction(this.mouseWheelZoom);
     this.initControls(options.controls);
     this.initBasemap(options.basemap);
+    this.initImageLayer(options.imageLayer);
     await this.initLayers(options.layers);
     this.forceUpdate(); // first render
 
@@ -256,6 +275,103 @@ export class GeomapPanel extends Component<Props, State> {
     }
     this.basemap = layer;
     this.map.getLayers().insertAt(0, this.basemap);
+  }
+
+  rotateProjection = (projection: any, angle: any, extent: any) => {
+    function rotateCoordinate(coordinate: any, angle: any, anchor: any) {
+      var coord = rotate([coordinate[0] - anchor[0], coordinate[1] - anchor[1]], angle);
+      return [coord[0] + anchor[0], coord[1] + anchor[1]];
+    }
+
+    function rotateTransform(coordinate: any) {
+      return rotateCoordinate(coordinate, angle, getCenter(extent));
+    }
+
+    function normalTransform(coordinate: any) {
+      return rotateCoordinate(coordinate, -angle, getCenter(extent));
+    }
+
+    var normalProjection = getProjection(projection);
+
+    var rotatedProjection = new Projection({
+      code: normalProjection.getCode() + ':' + angle.toString() + ':' + extent.toString(),
+      units: normalProjection.getUnits(),
+      extent: extent,
+    });
+    addProjection(rotatedProjection);
+
+    addCoordinateTransforms(
+      'EPSG:4326',
+      rotatedProjection,
+      function (coordinate) {
+        return rotateTransform(transform(coordinate, 'EPSG:4326', projection));
+      },
+      function (coordinate) {
+        return transform(normalTransform(coordinate), projection, 'EPSG:4326');
+      }
+    );
+
+    addCoordinateTransforms(
+      'EPSG:3857',
+      rotatedProjection,
+      function (coordinate) {
+        return rotateTransform(transform(coordinate, 'EPSG:3857', projection));
+      },
+      function (coordinate) {
+        return transform(normalTransform(coordinate), projection, 'EPSG:3857');
+      }
+    );
+
+    return rotatedProjection;
+  };
+
+  initImageLayer(imageLayer: ImageLayerConfig) {
+    if (
+      (imageLayer.bottomLeftCoordinates === undefined ||
+        imageLayer.topRightCoordinates === undefined ||
+        imageLayer.bottomLeftCoordinates.lon === undefined ||
+        imageLayer.bottomLeftCoordinates.lat === undefined ||
+        imageLayer.topRightCoordinates.lon === undefined ||
+        imageLayer.topRightCoordinates.lat === undefined ||
+        imageLayer.url === undefined,
+      imageLayer.angle === undefined)
+    ) {
+      // If any of the above is undefined then don't do anything since we need all the data
+      console.log(
+        `GeoMapPanel - ImageLayer: Some configurations on the image layer object are undefined: ${JSON.stringify(
+          imageLayer
+        )}`
+      );
+      return;
+    }
+
+    // TODO first remove previous image layer if any
+
+    let coordinates = {};
+    // @ts-ignore
+    coordinates.bottomLeft = [imageLayer.bottomLeftCoordinates.lon, imageLayer.bottomLeftCoordinates.lat];
+    // @ts-ignore
+    coordinates.topRight = [imageLayer.topRightCoordinates.lon, imageLayer.topRightCoordinates.lat];
+    // @ts-ignore
+    console.log(
+      `GeoMapPanel - ImageLayer: Adding image layer with url: ${imageLayer.url} to coordinates bottom left: ${coordinates.bottomLeft} and top right: ${coordinates.topRight}`
+    );
+
+    // @ts-ignore
+    let extent = coordinates.bottomLeft.concat(coordinates.topRight);
+    extent = transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
+    console.log(`GeoMapPanel - ImageLayer: EPSG:3857 equivalent for EPSG:4326 coordinates is: ${extent}`);
+
+    const staticImageLayer = new ImageLayer({
+      source: new Static({
+        url: imageLayer.url!,
+        crossOrigin: '',
+        projection: this.rotateProjection('EPSG:3857', (imageLayer.angle * Math.PI) / 180, extent),
+        imageExtent: extent,
+      }),
+    });
+
+    this.map!.addLayer(staticImageLayer);
   }
 
   async initLayers(layers: MapLayerOptions[]) {
