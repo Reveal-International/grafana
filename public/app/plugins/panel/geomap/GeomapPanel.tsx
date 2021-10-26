@@ -69,6 +69,7 @@ export class GeomapPanel extends Component<Props, State> {
   map?: Map;
   basemap?: BaseLayer;
   layers: MapLayerState[] = [];
+  currentImageLayer?: BaseLayer;
   mouseWheelZoom?: MouseWheelZoom;
   style = getStyles(config.theme);
   hoverPayload: GeomapHoverPayload = { point: {}, pageX: -1, pageY: -1 };
@@ -345,7 +346,12 @@ export class GeomapPanel extends Component<Props, State> {
       return;
     }
 
-    // TODO first remove previous image layer if any
+    // remove the current image layer from the map if it already exists
+    if (this.currentImageLayer !== undefined) {
+      this.map!.removeLayer(this.currentImageLayer);
+      this.currentImageLayer.dispose();
+      console.log('GeoMapPanel - ImageLayer: Removing previous image layer');
+    }
 
     let coordinates = {};
     // @ts-ignore
@@ -371,6 +377,8 @@ export class GeomapPanel extends Component<Props, State> {
       }),
     });
 
+    // Add the new image layer to the state and then to the map
+    this.currentImageLayer = staticImageLayer;
     this.map!.addLayer(staticImageLayer);
   }
 
