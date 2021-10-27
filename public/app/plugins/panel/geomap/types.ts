@@ -48,6 +48,8 @@ export const defaultImageLayerCoordinates: ImageLayerConfig = {};
 export interface ImageLayerConfig {
   url?: string;
   angle?: number;
+  synchronizeMapAngle?: boolean;
+  restrictMapExtent?: boolean;
   bottomLeftCoordinates?: ImageLayerCoordinates;
   topRightCoordinates?: ImageLayerCoordinates;
 }

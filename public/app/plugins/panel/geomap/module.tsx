@@ -71,6 +71,21 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
         description: 'Defines the angle in which the image will be drawn in the map',
         defaultValue: 0,
       })
+      .addBooleanSwitch({
+        category,
+        path: 'imageLayer.synchronizeMapAngle',
+        description:
+          'Synchronizes map angle along with image layer angle, this will keep the image on a 0 degrees angle while changing the angle of the map',
+        name: 'Synchronize map angle',
+        defaultValue: false,
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'imageLayer.restrictMapExtent',
+        description: 'Restricts map extent to fit size of image layer',
+        name: 'Restrict map extent to fit image layer',
+        defaultValue: false,
+      })
       .addCustomEditor({
         category: category,
         id: 'imageLayer.bottomLeftCoordinates',
