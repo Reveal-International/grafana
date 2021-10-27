@@ -38,6 +38,22 @@ export const defaultView: MapViewConfig = {
   zoom: 1,
 };
 
+export interface ImageLayerCoordinates {
+  lat?: number;
+  lon?: number;
+}
+
+export const defaultImageLayerCoordinates: ImageLayerConfig = {};
+
+export interface ImageLayerConfig {
+  url?: string;
+  angle?: number;
+  synchronizeMapAngle?: boolean;
+  restrictMapExtent?: boolean;
+  bottomLeftCoordinates?: ImageLayerCoordinates;
+  topRightCoordinates?: ImageLayerCoordinates;
+}
+
 export interface TooltipOptions {
   extensions?: [TooltipExtension];
   title?: string;
@@ -51,5 +67,6 @@ export interface GeomapPanelOptions {
   controls: ControlsOptions;
   basemap: MapLayerOptions;
   layers: MapLayerOptions[];
+  imageLayer: ImageLayerConfig;
   tooltips: TooltipOptions;
 }

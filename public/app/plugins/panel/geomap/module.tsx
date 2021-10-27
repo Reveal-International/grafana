@@ -3,11 +3,12 @@ import { BaseLayerEditor } from './editor/BaseLayerEditor';
 import { DataLayersEditor } from './editor/DataLayersEditor';
 import { GeomapPanel } from './GeomapPanel';
 import { MapViewEditor } from './editor/MapViewEditor';
-import { defaultView, GeomapPanelOptions } from './types';
+import { defaultImageLayerCoordinates, defaultView, GeomapPanelOptions } from './types';
 import { mapPanelChangedHandler } from './migrations';
 import { defaultMarkersConfig } from './layers/data/markersLayer';
 import { DEFAULT_BASEMAP_CONFIG } from './layers/registry';
 import { TooltipExtension } from '@grafana/schema';
+import { ImageLayerEditor } from './editor/ImageLayerEditor';
 
 export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
   .setNoPadding()
@@ -50,6 +51,57 @@ export const plugin = new PanelPlugin<GeomapPanelOptions>(GeomapPanel)
       editor: DataLayersEditor,
       defaultValue: [defaultMarkersConfig],
     });
+
+    // The image layer section
+    category = ['Image layer'];
+    builder
+      .addTextInput({
+        category,
+        path: 'imageLayer.url',
+        name: 'Image Url',
+        description: 'Overlays an image on top of the map',
+        settings: {
+          placeholder: 'https://avenge.com/image-layer.png',
+        },
+      })
+      .addNumberInput({
+        category,
+        path: 'imageLayer.angle',
+        name: 'Image angle',
+        description: 'Defines the angle in which the image will be drawn in the map',
+        defaultValue: 0,
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'imageLayer.synchronizeMapAngle',
+        description:
+          'Synchronizes map angle along with image layer angle, this will keep the image on a 0 degrees angle while changing the angle of the map',
+        name: 'Synchronize map angle',
+        defaultValue: false,
+      })
+      .addBooleanSwitch({
+        category,
+        path: 'imageLayer.restrictMapExtent',
+        description: 'Restricts map extent to fit size of image layer',
+        name: 'Restrict map extent to fit image layer',
+        defaultValue: false,
+      })
+      .addCustomEditor({
+        category: category,
+        id: 'imageLayer.bottomLeftCoordinates',
+        path: 'imageLayer.bottomLeftCoordinates',
+        name: 'Bottom left coordinates',
+        editor: ImageLayerEditor,
+        defaultValue: defaultImageLayerCoordinates,
+      })
+      .addCustomEditor({
+        category: category,
+        id: 'imageLayer.topRightCoordinates',
+        path: 'imageLayer.topRightCoordinates',
+        name: 'Top right coordinates',
+        editor: ImageLayerEditor,
+        defaultValue: defaultImageLayerCoordinates,
+      });
 
     // The tooltips section
     category = ['Tooltip Extensions'];
