@@ -75,7 +75,9 @@ function geoHashMetricGroupsToOverlay(
   };
 }
 
-export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
+export function Map3dCylinderPanel(propsConfig: any) {
+  const props: PanelProps<Map3dPanelOptions> = propsConfig.props;
+
   const [customDonutLayers, setCustomDonutLayers] = React.useState([] as any);
   const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
@@ -228,13 +230,16 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
   const addLayersToMap = (
     geoHashMetricGroups: GeoHashMetricGroup[],
     map: any,
-    props: PanelProps<Map3dPanelOptions>
+    props: PanelProps<Map3dPanelOptions>,
+    updateMap: any
   ) => {
     // Update the overlay
     setOverlay(geoHashMetricGroupsToOverlay(config.theme2, props, geoHashMetricGroups));
 
     // Update map state
     setMap(map);
+    // Update map instance of parent panel so we can use it in the config panel
+    updateMap(map.map);
     // @ts-ignore
     const mapContainer = map.map.getContainer();
 
@@ -308,7 +313,7 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
     // Metrics or map changed, updating
     if (Object.keys(map).length !== 0) {
       cleanupMap(map);
-      addLayersToMap(geoHashMetricGroups, map, props);
+      addLayersToMap(geoHashMetricGroups, map, props, propsConfig.updateMap);
     }
   }, [geoHashMetricGroups]);
 
@@ -339,11 +344,12 @@ export function Map3dCylinderPanel(props: PanelProps<Map3dPanelOptions>) {
         height: props.height,
         width: props.width,
       }}
-      defaultZoom={props.options.zoom}
       pitch={props.options.pitch}
       bearing={props.options.bearing}
-      defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map, props)}
+      defaultZoom={props.options.mapViewConfig.zoom}
+      // @ts-ignore
+      defaultCenter={[props.options.mapViewConfig.lon, props.options.mapViewConfig.lat]}
+      onLoad={(map) => addLayersToMap(geoHashMetricGroups, map, props, propsConfig.updateMap)}
     >
       <MapSource type="geojson" id="overlay-source" data={overlay as GeoJSON.FeatureCollection} />
       <MapLayer

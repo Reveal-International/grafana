@@ -1,10 +1,19 @@
 import { PanelPlugin } from '@grafana/data';
-import { Map3dPanelOptions } from './types';
+import { defaultView, Map3dPanelOptions } from './types';
 import { Map3dPanel } from './Map3dPanel';
+import { MapViewEditor } from './editor/MapViewEditor';
 
 export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
   .useFieldConfig()
   .setPanelOptions((builder) => {
+    builder.addCustomEditor({
+      id: 'mapViewConfig',
+      path: 'mapViewConfig',
+      name: 'Initial view', // don't show it
+      description: 'This location will show when the panel first loads',
+      editor: MapViewEditor,
+      defaultValue: defaultView,
+    });
     builder.addNumberInput({
       path: 'pitch',
       name: 'Pitch',
@@ -16,22 +25,6 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       name: 'Bearing',
       description: 'Map bearing',
       defaultValue: -37.6,
-    });
-    builder.addNumberInput({
-      path: 'zoom',
-      name: 'Zoom',
-      description: 'Map initial zoom',
-      defaultValue: 15.5,
-    });
-    builder.addNumberInput({
-      path: 'initialCoords.lng',
-      name: 'Initial Longitude',
-      defaultValue: 174.76613,
-    });
-    builder.addNumberInput({
-      path: 'initialCoords.lat',
-      name: 'Initial Latitude',
-      defaultValue: -36.849034,
     });
     builder.addSelect({
       path: 'displayType',
@@ -49,7 +42,7 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       path: 'legendPosition',
       name: 'Legend position',
       description: '',
-      defaultValue: 'Bottom right corner',
+      defaultValue: 'legend-bottom-right-corner',
       settings: {
         options: [
           { value: 'legend-bottom-right-corner', label: 'Bottom right corner' },
@@ -61,7 +54,7 @@ export const plugin = new PanelPlugin<Map3dPanelOptions>(Map3dPanel)
       path: 'legendFormat',
       name: 'Legend format',
       description: '',
-      defaultValue: 'List',
+      defaultValue: 'legend-list',
       settings: {
         options: [
           { value: 'legend-list', label: 'List' },
