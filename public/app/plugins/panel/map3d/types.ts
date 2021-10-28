@@ -1,5 +1,3 @@
-import { LngLat } from 'maplibre-gl';
-
 export type DisplayType = 'cylinder' | 'circle';
 
 export interface Map3dPanelOptions {
@@ -9,11 +7,22 @@ export interface Map3dPanelOptions {
   mapType: string;
   pitch: number;
   bearing: number;
-  zoom: number;
+  mapViewConfig: MapViewConfig;
   minHeight: number;
   maxHeight: number;
   minRadius: number;
   maxRadius: number;
-  initialCoords: LngLat;
   accessToken: string;
 }
+
+export interface MapViewConfig {
+  lat?: number;
+  lon?: number;
+  zoom?: number;
+}
+
+export const defaultView: MapViewConfig = {
+  lat: 0,
+  lon: 0,
+  zoom: 1,
+};

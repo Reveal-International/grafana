@@ -14,7 +14,9 @@ import {
 } from '../helper/Map3dSidebar';
 import { GeoHashMetricGroup, getGeoHashMetricGroups } from '../metrics/metric-parser';
 
-export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
+export function Map3dCirclePanel(propsConfig: any) {
+  const props: PanelProps<Map3dPanelOptions> = propsConfig.props;
+
   const [geoHashMetricGroups, setGeoHashMetricGroups] = React.useState([] as GeoHashMetricGroup[]);
   const [map, setMap] = React.useState({});
 
@@ -79,9 +81,13 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
   const addMarkersToMap = (
     geoHashMetricGroups: GeoHashMetricGroup[],
     map: any,
-    props: PanelProps<Map3dPanelOptions>
+    props: PanelProps<Map3dPanelOptions>,
+    updateMap: any
   ) => {
     setMap(map);
+    // Update map instance of parent panel so we can use it in the config panel
+    updateMap(map.map);
+
     const mapContainer = map.map.getContainer();
 
     // Add sidebar container
@@ -124,7 +130,7 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
     // Metrics or map changed, updating
     cleanupMap();
     if (Object.keys(map).length !== 0) {
-      addMarkersToMap(geoHashMetricGroups, map, props);
+      addMarkersToMap(geoHashMetricGroups, map, props, propsConfig.updateMap);
     }
   }, [geoHashMetricGroups, map]);
 
@@ -142,11 +148,12 @@ export function Map3dCirclePanel(props: PanelProps<Map3dPanelOptions>) {
         height: props.height,
         width: props.width,
       }}
-      defaultZoom={props.options.zoom}
       pitch={props.options.pitch}
       bearing={props.options.bearing}
-      defaultCenter={props.options.initialCoords}
-      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map, props)}
+      defaultZoom={props.options.mapViewConfig.zoom}
+      // @ts-ignore
+      defaultCenter={[props.options.mapViewConfig.lon, props.options.mapViewConfig.lat]}
+      onLoad={(map) => addMarkersToMap(geoHashMetricGroups, map, props, propsConfig.updateMap)}
     ></Map>
   );
 }
