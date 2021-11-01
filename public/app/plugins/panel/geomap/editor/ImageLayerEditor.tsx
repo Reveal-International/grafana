@@ -19,7 +19,7 @@ export const ImageLayerEditor: FC<StandardEditorProps<ImageLayerCoordinates, any
             value={value.lat}
             min={-90}
             max={90}
-            step={0.001}
+            step={0.0001}
             onChange={(v) => {
               onChange({ ...value, lat: v });
             }}
@@ -32,7 +32,7 @@ export const ImageLayerEditor: FC<StandardEditorProps<ImageLayerCoordinates, any
             value={value.lon}
             min={-180}
             max={180}
-            step={0.001}
+            step={0.0001}
             onChange={(v) => {
               onChange({ ...value, lon: v });
             }}

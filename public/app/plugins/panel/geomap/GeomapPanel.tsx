@@ -337,12 +337,14 @@ export class GeomapPanel extends Component<Props, State> {
     // @ts-ignore
     coordinates.topRight = [imageLayer.topRightCoordinates.lon, imageLayer.topRightCoordinates.lat];
     // @ts-ignore
-    // console.log(`GeoMapPanel - ImageLayer: Adding image layer with url: ${imageLayer.url} to coordinates bottom left: ${coordinates.bottomLeft} and top right: ${coordinates.topRight}`);
+    console.log(
+      `GeoMapPanel - ImageLayer: Adding image layer with url: ${imageLayer.url} to coordinates bottom left: ${coordinates.bottomLeft} and top right: ${coordinates.topRight}`
+    );
 
     // @ts-ignore
     let extent = coordinates.bottomLeft.concat(coordinates.topRight);
     extent = transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
-    // console.log(`GeoMapPanel - ImageLayer: EPSG:3857 equivalent for EPSG:4326 coordinates is: ${extent}`);
+    console.log(`GeoMapPanel - ImageLayer: EPSG:3857 equivalent for EPSG:4326 coordinates is: ${extent}`);
 
     return extent;
   };
@@ -366,6 +368,13 @@ export class GeomapPanel extends Component<Props, State> {
   };
 
   initImageLayer(imageLayer: ImageLayerConfig) {
+    // remove the current image layer from the map if it already exists
+    if (this.currentImageLayer !== undefined) {
+      this.map!.removeLayer(this.currentImageLayer);
+      this.currentImageLayer.dispose();
+      console.log('GeoMapPanel - ImageLayer: Removing previous image layer');
+    }
+
     if (!this.imageLayerValidState(imageLayer)) {
       // If any of the above is undefined then don't do anything since we need all the data
       console.log(
@@ -376,52 +385,16 @@ export class GeomapPanel extends Component<Props, State> {
       return;
     }
 
-    // remove the current image layer from the map if it already exists
-    if (this.currentImageLayer !== undefined) {
-      this.map!.removeLayer(this.currentImageLayer);
-      this.currentImageLayer.dispose();
-      console.log('GeoMapPanel - ImageLayer: Removing previous image layer');
-    }
-
     let extent: any = this.calculateExtent(imageLayer);
-    // @ts-ignore
-    extent = this.findExtentOfRotatedGeometry(this.calculateExtent(imageLayer), imageLayer.angle);
-    console.log(`GeoMapPanel - InitMapLayer: View Extent ${JSON.stringify(extent)} and angle is ${imageLayer.angle}`);
-
     const staticImageLayer = new ImageLayer({
       source: new Static({
         url: imageLayer.url!,
         crossOrigin: '',
         // @ts-ignore
-        projection: this.rotateProjection(
-          'EPSG:3857',
-          (imageLayer.angle * Math.PI) / 180,
-          this.calculateExtent(imageLayer)
-        ),
+        projection: this.rotateProjection('EPSG:3857', (imageLayer.angle * Math.PI) / 180, extent),
         imageExtent: extent,
       }),
     });
-
-    // const geom = fromExtent(extent);
-    // // @ts-ignore
-    // const map_center = this.map!.getView().getCenter();
-    // // @ts-ignore
-    // const rotation_in_radians = imageLayer.angle * Math.PI / 180;
-    // // @ts-ignore
-    // geom.rotate(rotation_in_radians, map_center);
-    // extent = geom.getExtent();
-    //
-    // if(this.polygonLayerState !== undefined) {
-    //   this.map!.removeLayer(this.polygonLayerState);
-    //   this.polygonLayerState.dispose();
-    // }
-    //
-    // const polygon_source = new VectorSource();
-    // const polygon_layer = new VectorLayer({source: polygon_source});
-    // this.map!.addLayer(polygon_layer);
-    // const polygon = new Feature(fromExtent(extent));
-    // polygon_source.addFeature(polygon);
-    // this.polygonLayerState = polygon_layer;
 
     // Add the new image layer to the state and then to the map
     this.currentImageLayer = staticImageLayer;
@@ -480,7 +453,6 @@ export class GeomapPanel extends Component<Props, State> {
 
   initMapView(config: MapViewConfig, imageLayer: ImageLayerConfig = {}): View {
     let mapAngle = 0;
-    let showFullExtent = false;
     let extent: any = undefined;
     if (this.imageLayerValidState(imageLayer)) {
       // Synchronizes the map angle with the image layer angle, this will keep the image in a 0 degrees angle while changing the angle on the map
@@ -491,7 +463,6 @@ export class GeomapPanel extends Component<Props, State> {
 
       // Restricts the extent of the map to fit the size of the image layer
       if (imageLayer.restrictMapExtent) {
-        showFullExtent = true;
         // @ts-ignore
         extent = this.findExtentOfRotatedGeometry(this.calculateExtent(imageLayer), imageLayer.angle);
       }
@@ -501,8 +472,7 @@ export class GeomapPanel extends Component<Props, State> {
 
     let view = new View({
       center: [0, 0],
-      showFullExtent: showFullExtent, // allows zooming so the full range is visible
-      // @ts-ignore
+      resolution: 1,
       rotation: mapAngle,
       extent: extent,
     });
@@ -529,11 +499,7 @@ export class GeomapPanel extends Component<Props, State> {
         coord = [v.lon ?? 0, v.lat ?? 0];
       }
       if (coord) {
-        if (extent !== undefined) {
-          view.setCenter(getCenterFromExtent(extent));
-        } else {
-          view.setCenter(fromLonLat(coord));
-        }
+        view.setCenter(fromLonLat(coord));
       }
     }
 
