@@ -1,7 +1,7 @@
 load('scripts/drone/vault.star', 'from_secret', 'github_token', 'pull_secret', 'drone_token')
 
-grabpl_version = '2.5.2'
-build_image = 'grafana/build-container:1.4.3'
+grabpl_version = '2.5.5'
+build_image = 'grafana/build-container:1.4.5'
 publish_image = 'grafana/grafana-ci-deploy:1.3.1'
 grafana_docker_image = 'grafana/drone-grafana-docker:0.3.2'
 deploy_docker_image = 'us.gcr.io/kubernetes-dev/drone/plugins/deploy-image'
@@ -48,9 +48,17 @@ def initialize_step(edition, platform, ver_mode, is_downstream=False, install_de
     ]
 
     if ver_mode == 'release':
+        args = '${DRONE_TAG}'
         common_cmds.append('./bin/grabpl verify-version ${DRONE_TAG}')
     elif ver_mode == 'test-release':
+        args = test_release_ver
         common_cmds.append('./bin/grabpl verify-version {}'.format(test_release_ver))
+    else:
+        if not is_downstream:
+            build_no = '${DRONE_BUILD_NUMBER}'
+        else:
+            build_no = '$${SOURCE_BUILD_NUMBER}'
+        args = '--build-id {}'.format(build_no)
 
     identify_runner_step = {
         'name': 'identify-runner',
@@ -62,6 +70,7 @@ def initialize_step(edition, platform, ver_mode, is_downstream=False, install_de
 
     if install_deps:
         common_cmds.extend([
+            './bin/grabpl gen-version {}'.format(args),
             'yarn install --immutable',
         ])
     if edition in ('enterprise', 'enterprise2'):
@@ -184,7 +193,7 @@ def build_storybook_step(edition, ver_mode):
         'image': build_image,
         'depends_on': [
             # Best to ensure that this step doesn't mess with what's getting built and packaged
-            'package',
+            'build-frontend',
         ],
         'environment': {
             'NODE_OPTIONS': '--max_old_space_size=4096',
@@ -365,8 +374,6 @@ def test_backend_step(edition):
             'lint-backend',
         ],
         'commands': [
-            # First make sure that there are no tests with FocusConvey
-            '[ $(grep FocusConvey -R pkg | wc -l) -eq "0" ] || exit 1',
             './bin/grabpl test-backend --edition {}'.format(edition),
         ],
     }
@@ -388,7 +395,7 @@ def test_frontend_step():
         'name': 'test-frontend',
         'image': build_image,
         'depends_on': [
-            'lint-frontend',
+            'initialize',
         ],
         'environment': {
             'TEST_MAX_WORKERS': '50%',
@@ -412,11 +419,22 @@ def lint_frontend_step():
             'yarn run prettier:check',
             'yarn run lint',
             'yarn run typecheck',
-            'yarn run check-strict',
         ],
     }
 
-def test_a11y_frontend_step(edition, port=3001):
+def test_a11y_frontend_step(ver_mode, edition, port=3001):
+    commands = [
+        'yarn wait-on http://$HOST:$PORT',
+    ]
+    if ver_mode == 'pr':
+        commands.extend([
+            'yarn dlx pa11y-ci@git://github.com/pa11y/pa11y-ci#5c842cf1b9fe2867b70ff5354851d985be8d71c4 pa11y-ci --config .pa11yci-pr.conf.js',
+        ])
+    else:
+        commands.extend([
+            'yarn dlx --quiet pa11y-ci@git://github.com/pa11y/pa11y-ci#5c842cf1b9fe2867b70ff5354851d985be8d71c4 pa11y-ci --config .pa11yci.conf.js --json > pa11y-ci-results.json',
+        ])
+
     return {
         'name': 'test-a11y-frontend' + enterprise2_suffix(edition),
         'image': 'buildkite/puppeteer',
@@ -429,29 +447,7 @@ def test_a11y_frontend_step(edition, port=3001):
             'PORT': port,
         },
         'failure': 'ignore',
-        'commands': [
-            'yarn wait-on http://$HOST:$PORT',
-            'yarn run test:accessibility --json > pa11y-ci-results.json',
-        ],
-    }
-
-def test_a11y_frontend_step_pr(edition, port=3001):
-    return {
-        'name': 'test-a11y-frontend-pr' + enterprise2_suffix(edition),
-        'image': 'buildkite/puppeteer',
-        'depends_on': [
-          'end-to-end-tests-server' + enterprise2_suffix(edition),
-        ],
-         'environment': {
-            'GRAFANA_MISC_STATS_API_KEY': from_secret('grafana_misc_stats_api_key'),
-            'HOST': 'end-to-end-tests-server' + enterprise2_suffix(edition),
-            'PORT': port,
-        },
-        'failure': 'ignore',
-        'commands': [
-            'yarn wait-on http://$HOST:$PORT',
-            'yarn run test:accessibility-pr',
-        ],
+        'commands': commands,
     }
 
 def frontend_metrics_step(edition):
@@ -500,13 +496,11 @@ def shellcheck_step():
         ],
     }
 
-def gen_version_step(ver_mode, include_enterprise2=False, is_downstream=False):
+def package_step(edition, ver_mode, include_enterprise2=False, variants=None, is_downstream=False):
     deps = [
         'build-plugins',
         'build-backend',
         'build-frontend',
-        'codespell',
-        'shellcheck',
     ]
     if include_enterprise2:
         sfx = '-enterprise2'
@@ -515,28 +509,6 @@ def gen_version_step(ver_mode, include_enterprise2=False, is_downstream=False):
             'test-backend' + sfx,
         ])
 
-    if ver_mode == 'release':
-        args = '${DRONE_TAG}'
-    elif ver_mode == 'test-release':
-        args = test_release_ver
-    else:
-        if not is_downstream:
-            build_no = '${DRONE_BUILD_NUMBER}'
-        else:
-            build_no = '$${SOURCE_BUILD_NUMBER}'
-        args = '--build-id {}'.format(build_no)
-
-    return {
-        'name': 'gen-version',
-        'image': build_image,
-        'depends_on': deps,
-        'commands': [
-            './bin/grabpl gen-version {}'.format(args),
-        ],
-    }
-
-
-def package_step(edition, ver_mode, variants=None, is_downstream=False):
     variants_str = ''
     if variants:
         variants_str = ' --variants {}'.format(','.join(variants))
@@ -584,11 +556,7 @@ def package_step(edition, ver_mode, variants=None, is_downstream=False):
     return {
         'name': 'package' + enterprise2_suffix(edition),
         'image': build_image,
-        'depends_on': [
-            # This step should have all the dependencies required for packaging, and should generate
-            # dist/grafana.version
-            'gen-version',
-        ],
+        'depends_on': deps,
         'environment': env,
         'commands': cmds,
     }
@@ -661,7 +629,7 @@ def copy_packages_for_docker_step():
         'name': 'copy-packages-for-docker',
         'image': build_image,
         'depends_on': [
-            'end-to-end-tests-server',
+            'package',
         ],
         'commands': [
             'ls dist/*.tar.gz*',
@@ -700,8 +668,7 @@ def postgres_integration_tests_step():
         'name': 'postgres-integration-tests',
         'image': build_image,
         'depends_on': [
-            'test-backend',
-            'test-frontend',
+            'initialize',
         ],
         'environment': {
             'PGPASSWORD': 'grafanatest',
@@ -725,8 +692,7 @@ def mysql_integration_tests_step():
         'name': 'mysql-integration-tests',
         'image': build_image,
         'depends_on': [
-            'test-backend',
-            'test-frontend',
+            'initialize',
         ],
         'environment': {
             'GRAFANA_TEST_DB': 'mysql',
@@ -814,8 +780,6 @@ def upload_packages_step(edition, ver_mode, is_downstream=False):
 
     dependencies = [
         'end-to-end-tests' + enterprise2_suffix(edition),
-        'mysql-integration-tests',
-        'postgres-integration-tests',
     ]
 
     if edition in ('enterprise', 'enterprise2'):
@@ -1010,12 +974,17 @@ def ensure_cuetsified_step():
             'validate-scuemata',
         ],
         'commands': [
+            '# Make sure the git tree is clean.',
+            '# Stashing changes, since packages that were produced in build-backend step are needed.',
+            'git stash',
             './bin/linux-amd64/grafana-cli cue gen-ts --grafana-root .',
             '# The above command generates Typescript files (*.gen.ts) from all appropriate .cue files.',
             '# It is required that the generated Typescript be in sync with the input CUE files.',
             '# ...Modulo eslint auto-fixes...:',
-            './node_modules/.bin/eslint . --ext .gen.ts --fix',
+            'yarn run eslint . --ext .gen.ts --fix',
             '# If any filenames are emitted by the below script, run the generator command `grafana-cli cue gen-ts` locally and commit the result.',
             './scripts/clean-git-or-error.sh',
+            '# Un-stash changes.',
+            'git stash pop',
         ],
     }

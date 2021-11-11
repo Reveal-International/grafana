@@ -7,6 +7,7 @@ awsconfig
 /.awcache
 /dist
 /public/build
+public/dist/tsconfig.tsbuildinfo
 /public/views/index.html
 /public/views/error.html
 /emails/dist
@@ -63,6 +64,7 @@ public/css/*.min.css
 !.vscode/launch.json
 .vs/
 .eslintcache
+.stylelintcache
 
 /data/*
 /bin/*
@@ -93,6 +95,7 @@ debug.test
 /packaging/**/*.rpm
 /packaging/**/*.deb
 /packaging/**/*.tar.gz
+/packaging/**/*.tar.gz.sha256
 
 # Ignore OSX indexing
 .DS_Store
