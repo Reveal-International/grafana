@@ -9,14 +9,20 @@ import {
   makeClassES5Compatible,
   DataFrame,
   parseLiveChannelAddress,
-  StreamingFrameOptions,
-  StreamingFrameAction,
   getDataSourceRef,
   DataSourceRef,
+  dataFrameToJSON,
 } from '@grafana/data';
 import { merge, Observable, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
-import { getBackendSrv, getDataSourceSrv, getGrafanaLiveSrv } from '../services';
+import {
+  getBackendSrv,
+  getDataSourceSrv,
+  getGrafanaLiveSrv,
+  StreamingFrameOptions,
+  StreamingFrameAction,
+} from '../services';
+import { config } from '../config';
 import { BackendDataSourceResponse, toDataQueryResponse } from './queryResponse';
 
 /**
@@ -109,6 +115,7 @@ class DataSourceWithBackend<
 
     const queries = targets.map((q) => {
       let datasource = this.getRef();
+      let datasourceId = this.id;
 
       if (isExpressionReference(q.datasource)) {
         return {
@@ -118,18 +125,20 @@ class DataSourceWithBackend<
       }
 
       if (q.datasource) {
-        const ds = getDataSourceSrv().getInstanceSettings(q.datasource);
+        const ds = getDataSourceSrv().getInstanceSettings(q.datasource, request.scopedVars);
 
         if (!ds) {
           throw new Error(`Unknown Datasource: ${JSON.stringify(q.datasource)}`);
         }
 
-        datasource = getDataSourceRef(ds);
+        datasource = ds.rawRef ?? getDataSourceRef(ds);
+        datasourceId = ds.id;
       }
 
       return {
         ...this.applyTemplateVariables(q, request.scopedVars),
         datasource,
+        datasourceId, // deprecated!
         intervalMs,
         maxDataPoints,
       };
@@ -146,6 +155,13 @@ class DataSourceWithBackend<
       body.range = range;
       body.from = range.from.valueOf().toString();
       body.to = range.to.valueOf().toString();
+    }
+
+    if (config.featureToggles.queryOverLive) {
+      return getGrafanaLiveSrv().getQueryData({
+        request,
+        body,
+      });
     }
 
     return getBackendSrv()
@@ -169,15 +185,6 @@ class DataSourceWithBackend<
         })
       );
   }
-
-  /**
-   * Override to skip executing a query
-   *
-   * @returns false if the query should be skipped
-   *
-   * @virtual
-   */
-  filterQuery?(query: TQuery): boolean;
 
   /**
    * Apply template variables for explore
@@ -256,7 +263,7 @@ class DataSourceWithBackend<
 export function toStreamingDataResponse<TQuery extends DataQuery = DataQuery>(
   rsp: DataQueryResponse,
   req: DataQueryRequest<TQuery>,
-  getter: (req: DataQueryRequest<TQuery>, frame: DataFrame) => StreamingFrameOptions
+  getter: (req: DataQueryRequest<TQuery>, frame: DataFrame) => Partial<StreamingFrameOptions>
 ): Observable<DataQueryResponse> {
   const live = getGrafanaLiveSrv();
   if (!live) {
@@ -273,7 +280,7 @@ export function toStreamingDataResponse<TQuery extends DataQuery = DataQuery>(
         live.getDataStream({
           addr,
           buffer: getter(req, frame),
-          frame,
+          frame: dataFrameToJSON(f),
         })
       );
     } else {
@@ -297,22 +304,22 @@ export function toStreamingDataResponse<TQuery extends DataQuery = DataQuery>(
 export type StreamOptionsProvider<TQuery extends DataQuery = DataQuery> = (
   request: DataQueryRequest<TQuery>,
   frame: DataFrame
-) => StreamingFrameOptions;
+) => Partial<StreamingFrameOptions>;
 
 /**
  * @public
  */
 export const standardStreamOptionsProvider: StreamOptionsProvider = (request: DataQueryRequest, frame: DataFrame) => {
-  const buffer: StreamingFrameOptions = {
+  const opts: Partial<StreamingFrameOptions> = {
     maxLength: request.maxDataPoints ?? 500,
     action: StreamingFrameAction.Append,
   };
 
   // For recent queries, clamp to the current time range
   if (request.rangeRaw?.to === 'now') {
-    buffer.maxDelta = request.range.to.valueOf() - request.range.from.valueOf();
+    opts.maxDelta = request.range.to.valueOf() - request.range.from.valueOf();
   }
-  return buffer;
+  return opts;
 };
 
 //@ts-ignore

@@ -5,13 +5,26 @@ import (
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"
 )
 
-var (
-	role = accesscontrol.RoleRegistration{
+func RegisterRoles(ac accesscontrol.AccessControl) error {
+	role := accesscontrol.RoleRegistration{
 		Role: accesscontrol.RoleDTO{
-			Version:     1,
+			Version:     3,
 			Name:        "fixed:serviceaccounts:writer",
-			Description: "",
+			DisplayName: "Service accounts writer",
+			Description: "Create, delete, read, or query service accounts.",
+			Group:       "Service accounts",
 			Permissions: []accesscontrol.Permission{
+				{
+					Action: serviceaccounts.ActionRead,
+					Scope:  serviceaccounts.ScopeAll,
+				},
+				{
+					Action: serviceaccounts.ActionWrite,
+					Scope:  serviceaccounts.ScopeAll,
+				},
+				{
+					Action: serviceaccounts.ActionCreate,
+				},
 				{
 					Action: serviceaccounts.ActionDelete,
 					Scope:  serviceaccounts.ScopeAll,
@@ -20,4 +33,10 @@ var (
 		},
 		Grants: []string{"Admin"},
 	}
-)
+
+	if err := ac.DeclareFixedRoles(role); err != nil {
+		return err
+	}
+
+	return nil
+}

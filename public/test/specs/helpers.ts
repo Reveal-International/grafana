@@ -150,6 +150,9 @@ export class ContextSrvStub {
 
 export function TemplateSrvStub(this: any) {
   this.variables = [];
+  this.getVariables = function () {
+    return this.variables;
+  };
   this.templateSettings = { interpolate: /\[\[([\s\S]+?)\]\]/g };
   this.data = {};
   this.replace = (text: string) => {
@@ -161,7 +164,7 @@ export function TemplateSrvStub(this: any) {
   };
   this.fillVariableValuesForUrl = () => {};
   this.updateIndex = () => {};
-  this.variableExists = () => {
+  this.containsTemplate = () => {
     return false;
   };
   this.variableInitialized = () => {};

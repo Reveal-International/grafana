@@ -16,7 +16,6 @@ import (
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/api/routing"
-	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/login"
@@ -118,8 +117,9 @@ func TestLoginErrorCookieAPIEndpoint(t *testing.T) {
 		SecretsService:   secretsService,
 	}
 
-	sc.defaultHandler = routing.Wrap(func(w http.ResponseWriter, c *models.ReqContext) {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		hs.LoginView(c)
+		return response.Empty(http.StatusOK)
 	})
 
 	cfg.LoginCookieName = "grafana_session"
@@ -154,7 +154,6 @@ func TestLoginErrorCookieAPIEndpoint(t *testing.T) {
 
 func TestLoginViewRedirect(t *testing.T) {
 	fakeSetIndexViewData(t)
-
 	fakeViewIndex(t)
 	sc := setupScenarioContext(t, "/login")
 	cfg := setting.NewCfg()
@@ -166,12 +165,13 @@ func TestLoginViewRedirect(t *testing.T) {
 	}
 	hs.Cfg.CookieSecure = true
 
-	sc.defaultHandler = routing.Wrap(func(w http.ResponseWriter, c *models.ReqContext) {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		c.IsSignedIn = true
 		c.SignedInUser = &models.SignedInUser{
 			UserId: 10,
 		}
 		hs.LoginView(c)
+		return response.Empty(http.StatusOK)
 	})
 
 	redirectCases := []redirectCase{
@@ -340,19 +340,19 @@ func TestLoginPostRedirect(t *testing.T) {
 	}
 	hs.Cfg.CookieSecure = true
 
-	sc.defaultHandler = routing.Wrap(func(w http.ResponseWriter, c *models.ReqContext) response.Response {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		c.Req.Header.Set("Content-Type", "application/json")
 		c.Req.Body = io.NopCloser(bytes.NewBufferString(`{"user":"admin","password":"admin"}`))
 		return hs.LoginPost(c)
 	})
 
-	bus.AddHandler("grafana-auth", func(query *models.LoginUserQuery) error {
-		query.User = &models.User{
-			Id:    42,
-			Email: "",
-		}
-		return nil
-	})
+	user := &models.User{
+		Id:    42,
+		Email: "",
+	}
+
+	mockAuthenticateUserFunc(user, "", nil)
+	t.Cleanup(resetAuthenticateUserFunc)
 
 	redirectCases := []redirectCase{
 		{
@@ -439,6 +439,7 @@ func TestLoginPostRedirect(t *testing.T) {
 	for _, c := range redirectCases {
 		hs.Cfg.AppURL = c.appURL
 		hs.Cfg.AppSubURL = c.appSubURL
+
 		t.Run(c.desc, func(t *testing.T) {
 			expCookiePath := "/"
 			if len(hs.Cfg.AppSubURL) > 0 {
@@ -504,8 +505,9 @@ func TestLoginOAuthRedirect(t *testing.T) {
 		SocialService:    mock,
 	}
 
-	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		hs.LoginView(c)
+		return response.Empty(http.StatusOK)
 	})
 
 	setting.OAuthAutoLogin = true
@@ -529,9 +531,10 @@ func TestLoginInternal(t *testing.T) {
 		log:     log.New("test"),
 	}
 
-	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		c.Req.URL.RawQuery = "disableAutoLogin=true"
 		hs.LoginView(c)
+		return response.Empty(http.StatusOK)
 	})
 
 	setting.OAuthAutoLogin = true
@@ -580,12 +583,13 @@ func setupAuthProxyLoginTest(t *testing.T, enableLoginToken bool) *scenarioConte
 		SocialService:    &mockSocialService{},
 	}
 
-	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		c.IsSignedIn = true
 		c.SignedInUser = &models.SignedInUser{
 			UserId: 10,
 		}
 		hs.LoginView(c)
+		return response.Empty(http.StatusOK)
 	})
 
 	sc.cfg.AuthProxyEnabled = true
@@ -616,7 +620,7 @@ func TestLoginPostRunLokingHook(t *testing.T) {
 		HooksService:     hookService,
 	}
 
-	sc.defaultHandler = routing.Wrap(func(w http.ResponseWriter, c *models.ReqContext) response.Response {
+	sc.defaultHandler = routing.Wrap(func(c *models.ReqContext) response.Response {
 		c.Req.Header.Set("Content-Type", "application/json")
 		c.Req.Body = io.NopCloser(bytes.NewBufferString(`{"user":"admin","password":"admin"}`))
 		x := hs.LoginPost(c)
@@ -680,12 +684,8 @@ func TestLoginPostRunLokingHook(t *testing.T) {
 
 	for _, c := range testCases {
 		t.Run(c.desc, func(t *testing.T) {
-			bus.AddHandler("grafana-auth", func(query *models.LoginUserQuery) error {
-				query.User = c.authUser
-				query.AuthModule = c.authModule
-				return c.authErr
-			})
-
+			mockAuthenticateUserFunc(c.authUser, c.authModule, c.authErr)
+			t.Cleanup(resetAuthenticateUserFunc)
 			sc.m.Post(sc.url, sc.defaultHandler)
 			sc.fakeReqNoAssertions("POST", sc.url).exec()
 
@@ -730,4 +730,15 @@ func (m *mockSocialService) GetOAuthHttpClient(name string) (*http.Client, error
 
 func (m *mockSocialService) GetConnector(string) (social.SocialConnector, error) {
 	return m.socialConnector, m.err
+}
+
+func mockAuthenticateUserFunc(user *models.User, authmodule string, err error) {
+	login.AuthenticateUserFunc = func(ctx context.Context, query *models.LoginUserQuery) error {
+		query.User = user
+		query.AuthModule = authmodule
+		return err
+	}
+}
+func resetAuthenticateUserFunc() {
+	login.AuthenticateUserFunc = login.AuthenticateUser
 }

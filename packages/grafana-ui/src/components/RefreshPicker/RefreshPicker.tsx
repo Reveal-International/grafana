@@ -54,7 +54,7 @@ export class RefreshPicker extends PureComponent<Props> {
   }
 
   render() {
-    const { onRefresh, intervals, tooltip, value, text, isLoading, noIntervalPicker } = this.props;
+    const { onRefresh, intervals, tooltip, value, text, isLoading, noIntervalPicker, width } = this.props;
 
     const currentValue = value || '';
     const variant = this.getVariant();
@@ -69,10 +69,12 @@ export class RefreshPicker extends PureComponent<Props> {
     return (
       <ButtonGroup className="refresh-picker">
         <ToolbarButton
+          aria-label={text}
           tooltip={tooltip}
           onClick={onRefresh}
           variant={variant}
           icon={isLoading ? 'fa fa-spinner' : 'sync'}
+          style={width ? { width } : undefined}
           data-testid={selectors.components.RefreshPicker.runButtonV2}
         >
           {text}
@@ -101,12 +103,7 @@ export function intervalsToOptions({ intervals = defaultIntervals }: { intervals
 > {
   const intervalsOrDefault = intervals || defaultIntervals;
   const options = intervalsOrDefault.map((interval) => {
-    const duration: { [key: string]: string | number } = parseDuration(interval);
-
-    const key = Object.keys(duration)[0];
-    const value = duration[key];
-    duration[key] = Number(value);
-
+    const duration = parseDuration(interval);
     const ariaLabel = formatDuration(duration);
 
     return {

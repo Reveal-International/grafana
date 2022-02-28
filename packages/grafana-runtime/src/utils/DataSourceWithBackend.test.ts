@@ -19,11 +19,11 @@ class MyDataSource extends DataSourceWithBackend<DataQuery, DataSourceJsonData> 
 
 const mockDatasourceRequest = jest.fn();
 
-const backendSrv = ({
+const backendSrv = {
   fetch: (options: BackendSrvRequest) => {
     return of(mockDatasourceRequest(options));
   },
-} as unknown) as BackendSrv;
+} as unknown as BackendSrv;
 
 jest.mock('../services', () => ({
   ...(jest.requireActual('../services') as any),
@@ -68,6 +68,7 @@ describe('DataSourceWithBackend', () => {
                 "type": "dummy",
                 "uid": "abc",
               },
+              "datasourceId": 1234,
               "intervalMs": 5000,
               "maxDataPoints": 10,
               "refId": "A",
@@ -77,6 +78,7 @@ describe('DataSourceWithBackend', () => {
                 "type": "sample",
                 "uid": "?",
               },
+              "datasourceId": undefined,
               "intervalMs": 5000,
               "maxDataPoints": 10,
               "refId": "B",

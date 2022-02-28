@@ -11,16 +11,20 @@ import {
   Themeable,
   Tooltip,
   useStyles2,
+  useTheme,
   withTheme,
 } from '@grafana/ui';
 import { GrafanaTheme, GrafanaTheme2 } from '@grafana/data';
-import { AccessControlAction, Organization, OrgRole, UserOrg } from 'app/types';
+import { AccessControlAction, Organization, OrgRole, UserDTO, UserOrg } from 'app/types';
 import { OrgPicker, OrgSelectItem } from 'app/core/components/Select/OrgPicker';
 import { OrgRolePicker } from './OrgRolePicker';
 import { contextSrv } from 'app/core/core';
+import { UserRolePicker } from 'app/core/components/RolePicker/UserRolePicker';
+import { fetchRoleOptions } from 'app/core/components/RolePicker/api';
 
 interface Props {
   orgs: UserOrg[];
+  user?: UserDTO;
   isExternalUser?: boolean;
 
   onOrgRemove: (orgId: number) => void;
@@ -49,7 +53,7 @@ export class UserOrgs extends PureComponent<Props, State> {
   };
 
   render() {
-    const { orgs, isExternalUser, onOrgRoleChange, onOrgRemove, onOrgAdd } = this.props;
+    const { user, orgs, isExternalUser, onOrgRoleChange, onOrgRemove, onOrgAdd } = this.props;
     const { showAddOrgModal } = this.state;
     const addToOrgContainerClass = css`
       margin-top: 0.8rem;
@@ -66,6 +70,7 @@ export class UserOrgs extends PureComponent<Props, State> {
                   <OrgRow
                     key={`${org.orgId}-${index}`}
                     isExternalUser={isExternalUser}
+                    user={user}
                     org={org}
                     onOrgRoleChange={onOrgRoleChange}
                     onOrgRemove={onOrgRemove}
@@ -107,26 +112,46 @@ const getOrgRowStyles = stylesFactory((theme: GrafanaTheme) => {
     tooltipItemLink: css`
       color: ${theme.palette.blue95};
     `,
+    rolePickerWrapper: css`
+      display: flex;
+    `,
+    rolePicker: css`
+      flex: auto;
+      margin-right: ${theme.spacing.sm};
+    `,
   };
 });
 
 interface OrgRowProps extends Themeable {
+  user?: UserDTO;
   org: UserOrg;
   isExternalUser?: boolean;
   onOrgRemove: (orgId: number) => void;
   onOrgRoleChange: (orgId: number, newRole: OrgRole) => void;
 }
 
-interface OrgRowState {
-  currentRole: OrgRole;
-  isChangingRole: boolean;
-}
-
-class UnThemedOrgRow extends PureComponent<OrgRowProps, OrgRowState> {
+class UnThemedOrgRow extends PureComponent<OrgRowProps> {
   state = {
     currentRole: this.props.org.role,
     isChangingRole: false,
+    roleOptions: [],
+    builtInRoles: {},
   };
+
+  componentDidMount() {
+    if (contextSrv.licensedAccessControlEnabled()) {
+      if (contextSrv.hasPermission(AccessControlAction.ActionRolesList)) {
+        fetchRoleOptions(this.props.org.orgId)
+          .then((roles) => this.setState({ roleOptions: roles }))
+          .catch((e) => console.error(e));
+      }
+      if (contextSrv.hasPermission(AccessControlAction.ActionBuiltinRolesList)) {
+        fetchRoleOptions(this.props.org.orgId)
+          .then((roles) => this.setState({ builtInRoles: roles }))
+          .catch((e) => console.error(e));
+      }
+    }
+  }
 
   onOrgRemove = () => {
     const { org } = this.props;
@@ -150,13 +175,18 @@ class UnThemedOrgRow extends PureComponent<OrgRowProps, OrgRowState> {
     this.setState({ isChangingRole: false });
   };
 
+  onBuiltinRoleChange = (newRole: OrgRole) => {
+    this.props.onOrgRoleChange(this.props.org.orgId, newRole);
+  };
+
   render() {
-    const { org, isExternalUser, theme } = this.props;
+    const { user, org, isExternalUser, theme } = this.props;
     const { currentRole, isChangingRole } = this.state;
     const styles = getOrgRowStyles(theme);
     const labelClass = cx('width-16', styles.label);
     const canChangeRole = contextSrv.hasPermission(AccessControlAction.OrgUsersRoleUpdate);
     const canRemoveFromOrg = contextSrv.hasPermission(AccessControlAction.OrgUsersRemove);
+    const rolePickerDisabled = isExternalUser || !canChangeRole;
 
     const inputId = `${org.name}-input`;
     return (
@@ -164,25 +194,46 @@ class UnThemedOrgRow extends PureComponent<OrgRowProps, OrgRowState> {
         <td className={labelClass}>
           <label htmlFor={inputId}>{org.name}</label>
         </td>
-        {isChangingRole ? (
+        {contextSrv.licensedAccessControlEnabled() ? (
           <td>
-            <OrgRolePicker inputId={inputId} value={currentRole} onChange={this.onOrgRoleChange} autoFocus />
+            <div className={styles.rolePickerWrapper}>
+              <div className={styles.rolePicker}>
+                <UserRolePicker
+                  userId={user?.id || 0}
+                  orgId={org.orgId}
+                  builtInRole={org.role}
+                  roleOptions={this.state.roleOptions}
+                  builtInRoles={this.state.builtInRoles}
+                  onBuiltinRoleChange={this.onBuiltinRoleChange}
+                  builtinRolesDisabled={rolePickerDisabled}
+                />
+              </div>
+              {isExternalUser && <ExternalUserTooltip />}
+            </div>
           </td>
         ) : (
-          <td className="width-25">{org.role}</td>
-        )}
-        <td colSpan={1}>
-          <div className="pull-right">
-            {canChangeRole && (
-              <ChangeOrgButton
-                isExternalUser={isExternalUser}
-                onChangeRoleClick={this.onChangeRoleClick}
-                onCancelClick={this.onCancelClick}
-                onOrgRoleSave={this.onOrgRoleSave}
-              />
+          <>
+            {isChangingRole ? (
+              <td>
+                <OrgRolePicker inputId={inputId} value={currentRole} onChange={this.onOrgRoleChange} autoFocus />
+              </td>
+            ) : (
+              <td className="width-25">{org.role}</td>
             )}
-          </div>
-        </td>
+            <td colSpan={1}>
+              <div className="pull-right">
+                {canChangeRole && (
+                  <ChangeOrgButton
+                    isExternalUser={isExternalUser}
+                    onChangeRoleClick={this.onChangeRoleClick}
+                    onCancelClick={this.onCancelClick}
+                    onOrgRoleSave={this.onOrgRoleSave}
+                  />
+                )}
+              </div>
+            </td>
+          </>
+        )}
         <td colSpan={1}>
           <div className="pull-right">
             {canRemoveFromOrg && (
@@ -219,7 +270,9 @@ const getAddToOrgModalStyles = stylesFactory(() => ({
 
 interface AddToOrgModalProps {
   isOpen: boolean;
+
   onOrgAdd(orgId: number, role: string): void;
+
   onDismiss?(): void;
 }
 
@@ -347,3 +400,42 @@ export function ChangeOrgButton({
     </div>
   );
 }
+
+const ExternalUserTooltip: React.FC = () => {
+  const theme = useTheme();
+  const styles = getTooltipStyles(theme);
+
+  return (
+    <div className={styles.disabledTooltip}>
+      <Tooltip
+        placement="right-end"
+        content={
+          <div>
+            This user&apos;s built-in role is not editable because it is synchronized from your auth provider. Refer to
+            the&nbsp;
+            <a
+              className={styles.tooltipItemLink}
+              href={'https://grafana.com/docs/grafana/latest/auth'}
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              Grafana authentication docs
+            </a>
+            &nbsp;for details.
+          </div>
+        }
+      >
+        <Icon name="question-circle" />
+      </Tooltip>
+    </div>
+  );
+};
+
+const getTooltipStyles = stylesFactory((theme: GrafanaTheme) => ({
+  disabledTooltip: css`
+    display: flex;
+  `,
+  tooltipItemLink: css`
+    color: ${theme.palette.blue95};
+  `,
+}));

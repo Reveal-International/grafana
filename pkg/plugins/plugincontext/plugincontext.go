@@ -22,7 +22,7 @@ import (
 
 func ProvideService(bus bus.Bus, cacheService *localcache.CacheService, pluginStore plugins.Store,
 	dataSourceCache datasources.CacheService, secretsService secrets.Service,
-	pluginSettingsService *pluginsettings.Service) *Provider {
+	pluginSettingsService *pluginsettings.ServiceImpl) *Provider {
 	return &Provider{
 		Bus:                   bus,
 		CacheService:          cacheService,
@@ -40,7 +40,7 @@ type Provider struct {
 	pluginStore           plugins.Store
 	DataSourceCache       datasources.CacheService
 	SecretsService        secrets.Service
-	PluginSettingsService *pluginsettings.Service
+	PluginSettingsService *pluginsettings.ServiceImpl
 	logger                log.Logger
 }
 
@@ -49,8 +49,8 @@ type Provider struct {
 // returned context.
 func (p *Provider) Get(ctx context.Context, pluginID string, datasourceUID string, user *models.SignedInUser, skipCache bool) (backend.PluginContext, bool, error) {
 	pc := backend.PluginContext{}
-	plugin := p.pluginStore.Plugin(pluginID)
-	if plugin == nil {
+	plugin, exists := p.pluginStore.Plugin(ctx, pluginID)
+	if !exists {
 		return pc, false, nil
 	}
 
@@ -86,7 +86,7 @@ func (p *Provider) Get(ctx context.Context, pluginID string, datasourceUID strin
 	}
 
 	if datasourceUID != "" {
-		ds, err := p.DataSourceCache.GetDatasourceByUID(datasourceUID, user, skipCache)
+		ds, err := p.DataSourceCache.GetDatasourceByUID(ctx, datasourceUID, user, skipCache)
 		if err != nil {
 			return pc, false, errutil.Wrap("Failed to get datasource", err)
 		}
@@ -114,7 +114,7 @@ func (p *Provider) getCachedPluginSettings(ctx context.Context, pluginID string,
 	}
 
 	query := models.GetPluginSettingByIdQuery{PluginId: pluginID, OrgId: user.OrgId}
-	if err := p.Bus.DispatchCtx(ctx, &query); err != nil {
+	if err := p.PluginSettingsService.GetPluginSettingById(ctx, &query); err != nil {
 		return nil, err
 	}
 

@@ -8,7 +8,7 @@ import (
     pdashlist "github.com/grafana/grafana/public/app/plugins/panel/dashlist:grafanaschema"
     pgauge "github.com/grafana/grafana/public/app/plugins/panel/gauge:grafanaschema"
     phistogram "github.com/grafana/grafana/public/app/plugins/panel/histogram:grafanaschema"
-    pmt "github.com/grafana/grafana/public/app/plugins/panel/market-trend:grafanaschema"
+    pcandlestick "github.com/grafana/grafana/public/app/plugins/panel/candlestick:grafanaschema"
     pnews "github.com/grafana/grafana/public/app/plugins/panel/news:grafanaschema"
     pstat "github.com/grafana/grafana/public/app/plugins/panel/stat:grafanaschema"
     st "github.com/grafana/grafana/public/app/plugins/panel/state-timeline:grafanaschema"
@@ -16,6 +16,7 @@ import (
     ptable "github.com/grafana/grafana/public/app/plugins/panel/table:grafanaschema"
     ptext "github.com/grafana/grafana/public/app/plugins/panel/text:grafanaschema"
     ptimeseries "github.com/grafana/grafana/public/app/plugins/panel/timeseries:grafanaschema"
+    pheatmap_new "github.com/grafana/grafana/public/app/plugins/panel/heatmap-new:grafanaschema"
 )
 
 // Family composes the base dashboard scuemata family with all Grafana core plugins -
@@ -32,7 +33,7 @@ Family: dashboard.Family & {
         dashlist: pdashlist.Panel
         gauge: pgauge.Panel
         histogram: phistogram.Panel
-        "market-trend": pmt.Panel
+        candlestick: pcandlestick.Panel
         news: pnews.Panel
         stat: pstat.Panel
         "state-timeline": st.Panel
@@ -40,5 +41,6 @@ Family: dashboard.Family & {
         text: ptext.Panel
         table: ptable.Panel
         timeseries: ptimeseries.Panel
+        "heatmap-new": pheatmap_new.Panel
     }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { GrafanaTheme2 } from '@grafana/data';
-import { Icon, IconName, Link, useTheme2 } from '@grafana/ui';
-import { css } from '@emotion/css';
+import { Icon, IconButton, IconName, Link, useTheme2 } from '@grafana/ui';
+import { css, cx } from '@emotion/css';
 
 export interface Props {
   icon?: IconName;
@@ -10,13 +10,38 @@ export interface Props {
   onClick?: () => void;
   styleOverrides?: string;
   target?: HTMLAnchorElement['target'];
-  text: string;
+  text: React.ReactNode;
   url?: string;
+  adjustHeightForBorder?: boolean;
+  isMobile?: boolean;
+  canPin?: boolean;
+  pinned?: boolean;
+  onTogglePin?: () => void;
 }
 
-export function NavBarMenuItem({ icon, isActive, isDivider, onClick, styleOverrides, target, text, url }: Props) {
+export function NavBarMenuItem({
+  icon,
+  isActive,
+  isDivider,
+  onClick,
+  styleOverrides,
+  target,
+  text,
+  url,
+  isMobile = false,
+  canPin = false,
+  pinned = false,
+  onTogglePin,
+}: Props) {
   const theme = useTheme2();
   const styles = getStyles(theme, isActive, styleOverrides);
+
+  const onClickPin = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    onTogglePin?.();
+  };
 
   const linkContent = (
     <div className={styles.linkContent}>
@@ -31,7 +56,7 @@ export function NavBarMenuItem({ icon, isActive, isDivider, onClick, styleOverri
   );
 
   let element = (
-    <button className={styles.element} onClick={onClick}>
+    <button className={styles.element} onClick={onClick} tabIndex={-1}>
       {linkContent}
     </button>
   );
@@ -39,27 +64,85 @@ export function NavBarMenuItem({ icon, isActive, isDivider, onClick, styleOverri
   if (url) {
     element =
       !target && url.startsWith('/') ? (
-        <Link className={styles.element} href={url} target={target} onClick={onClick}>
+        <Link className={styles.element} href={url} target={target} onClick={onClick} tabIndex={!isMobile ? -1 : 0}>
           {linkContent}
         </Link>
       ) : (
-        <a href={url} target={target} className={styles.element} onClick={onClick}>
+        <a href={url} target={target} className={styles.element} onClick={onClick} tabIndex={!isMobile ? -1 : 0}>
           {linkContent}
         </a>
       );
   }
 
-  return isDivider ? <li data-testid="dropdown-child-divider" className={styles.divider} /> : <li>{element}</li>;
+  if (isMobile) {
+    return isDivider ? (
+      <li data-testid="dropdown-child-divider" className={styles.divider} tabIndex={-1} aria-disabled />
+    ) : (
+      <li className={styles.listItem}>
+        {element}
+        {canPin && (
+          <IconButton
+            name="anchor"
+            className={cx('pin-button', styles.pinButton, { [styles.visible]: pinned })}
+            onClick={onClickPin}
+            tooltip={`${pinned ? 'Unpin' : 'Pin'} menu item`}
+          />
+        )}
+      </li>
+    );
+  }
+
+  return isDivider ? (
+    <div data-testid="dropdown-child-divider" className={styles.divider} tabIndex={-1} aria-disabled />
+  ) : (
+    <div style={{ position: 'relative' }}>{element}</div>
+  );
 }
 
 NavBarMenuItem.displayName = 'NavBarMenuItem';
 
 const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], styleOverrides: Props['styleOverrides']) => ({
+  visible: css`
+    color: ${theme.colors.text.primary} !important;
+    opacity: 100% !important;
+  `,
   divider: css`
     border-bottom: 1px solid ${theme.colors.border.weak};
     height: 1px;
     margin: ${theme.spacing(1)} 0;
     overflow: hidden;
+  `,
+  listItem: css`
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    &:hover,
+    &:focus-within {
+      color: ${theme.colors.text.primary};
+
+      > *:first-child::after {
+        background-color: ${theme.colors.action.hover};
+      }
+    }
+
+    > .pin-button {
+      opacity: 0;
+    }
+
+    &:hover > .pin-button,
+    &:focus-visible > .pin-button {
+      opacity: 100%;
+    }
+  `,
+  pinButton: css`
+    position: relative;
+    flex-shrink: 2;
+    color: ${theme.colors.text.secondary};
+
+    &:focus-visible {
+      opacity: 100%;
+    }
   `,
   element: css`
     align-items: center;
@@ -70,22 +153,23 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], styleOverr
     font-size: inherit;
     height: 100%;
     padding: 5px 12px 5px 10px;
-    position: relative;
     text-align: left;
     white-space: nowrap;
-    width: 100%;
 
-    &:hover,
-    &:focus-visible {
-      background-color: ${theme.colors.action.hover};
-      color: ${theme.colors.text.primary};
+    &:focus-visible + .pin-button {
+      opacity: 100%;
     }
 
     &:focus-visible {
+      outline: none;
       box-shadow: none;
-      outline: 2px solid ${theme.colors.primary.main};
-      outline-offset: -2px;
-      transition: none;
+
+      &::after {
+        box-shadow: none;
+        outline: 2px solid ${theme.colors.primary.main};
+        outline-offset: -2px;
+        transition: none;
+      }
     }
 
     &::before {
@@ -99,6 +183,16 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], styleOverr
       border-radius: 2px;
       background-image: ${theme.colors.gradients.brandVertical};
     }
+
+    &::after {
+      position: absolute;
+      content: '';
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+    }
+
     ${styleOverrides};
   `,
   externalLinkIcon: css`

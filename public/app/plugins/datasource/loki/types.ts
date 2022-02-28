@@ -1,4 +1,6 @@
 import { DataQuery, DataSourceJsonData, QueryResultMeta, ScopedVars } from '@grafana/data';
+import { QueryEditorMode } from '../prometheus/querybuilder/shared/types';
+import { LokiVisualQuery } from './querybuilder/types';
 
 export interface LokiInstantQueryRequest {
   query: string;
@@ -14,8 +16,6 @@ export interface LokiRangeQueryRequest {
   end?: number;
   step?: number;
   direction?: 'BACKWARD' | 'FORWARD';
-  // extra info passed to Loki API when a log volume query is run to distinguish it from any other query
-  hint?: 'logvolhist';
 }
 
 export enum LokiResultType {
@@ -24,7 +24,14 @@ export enum LokiResultType {
   Matrix = 'matrix',
 }
 
+export enum LokiQueryType {
+  Range = 'range',
+  Instant = 'instant',
+  // Stream = 'stream',
+}
+
 export interface LokiQuery extends DataQuery {
+  queryType?: LokiQueryType;
   expr: string;
   query?: string;
   format?: string;
@@ -33,9 +40,15 @@ export interface LokiQuery extends DataQuery {
   valueWithRefId?: boolean;
   maxLines?: number;
   resolution?: number;
-  range?: boolean;
-  instant?: boolean;
+  /** Used in range queries */
   volumeQuery?: boolean;
+  /* @deprecated now use queryType */
+  range?: boolean;
+  /* @deprecated now use queryType */
+  instant?: boolean;
+  editorMode?: QueryEditorMode;
+  /** Temporary until we have a parser */
+  visualQuery?: LokiVisualQuery;
 }
 
 export interface LokiOptions extends DataSourceJsonData {

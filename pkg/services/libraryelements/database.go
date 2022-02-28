@@ -436,7 +436,7 @@ func (l *LibraryElementService) handleFolderIDPatches(ctx context.Context, eleme
 }
 
 // patchLibraryElement updates a Library Element.
-func (l *LibraryElementService) patchLibraryElement(c context.Context, signedInUser *models.SignedInUser, cmd patchLibraryElementCommand, uid string) (LibraryElementDTO, error) {
+func (l *LibraryElementService) patchLibraryElement(c context.Context, signedInUser *models.SignedInUser, cmd PatchLibraryElementCommand, uid string) (LibraryElementDTO, error) {
 	var dto LibraryElementDTO
 	if err := l.requireSupportedElementKind(cmd.Kind); err != nil {
 		return LibraryElementDTO{}, err
@@ -692,9 +692,15 @@ func (l *LibraryElementService) deleteLibraryElementsInFolderUID(c context.Conte
 		if err != nil {
 			return err
 		}
+
+		if len(folderUIDs) == 0 {
+			return models.ErrFolderNotFound
+		}
+
 		if len(folderUIDs) != 1 {
 			return fmt.Errorf("found %d folders, while expecting at most one", len(folderUIDs))
 		}
+
 		folderID := folderUIDs[0].ID
 
 		if err := l.requirePermissionsOnFolder(c, signedInUser, folderID); err != nil {

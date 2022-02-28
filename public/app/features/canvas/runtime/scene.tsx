@@ -1,6 +1,7 @@
 import React, { CSSProperties } from 'react';
 import { css } from '@emotion/css';
 import { ReplaySubject, Subject } from 'rxjs';
+import { first } from 'rxjs/operators';
 import Moveable from 'moveable';
 import Selecto from 'selecto';
 
@@ -14,16 +15,19 @@ import {
   ScaleDimensionConfig,
   TextDimensionConfig,
   DimensionContext,
+  ScalarDimensionConfig,
 } from 'app/features/dimensions';
 import {
   getColorDimensionFromData,
   getScaleDimensionFromData,
   getResourceDimensionFromData,
   getTextDimensionFromData,
+  getScalarDimensionFromData,
 } from 'app/features/dimensions/utils';
 import { ElementState } from './element';
 import { RootElement } from './root';
 import { GroupState } from './group';
+import { LayerActionID } from 'app/plugins/panel/canvas/types';
 
 export interface SelectionParams {
   targets: Array<HTMLElement | SVGElement>;
@@ -34,6 +38,7 @@ export class Scene {
   styles = getStyles(config.theme2);
   readonly selection = new ReplaySubject<ElementState[]>(1);
   readonly moved = new Subject<number>(); // called after resize/drag for editor updates
+  readonly byName = new Map<string, ElementState>();
   root: RootElement;
 
   revId = 0;
@@ -50,6 +55,25 @@ export class Scene {
   constructor(cfg: CanvasGroupOptions, enableEditing: boolean, public onSave: (cfg: CanvasGroupOptions) => void) {
     this.root = this.load(cfg, enableEditing);
   }
+
+  getNextElementName = (isGroup = false) => {
+    const label = isGroup ? 'Group' : 'Element';
+    let idx = this.byName.size + 1;
+
+    const max = idx + 100;
+    while (true && idx < max) {
+      const name = `${label} ${idx++}`;
+      if (!this.byName.has(name)) {
+        return name;
+      }
+    }
+
+    return `${label} ${Date.now()}`;
+  };
+
+  canRename = (v: string) => {
+    return !this.byName.has(v);
+  };
 
   load(cfg: CanvasGroupOptions, enableEditing: boolean) {
     this.root = new RootElement(
@@ -74,6 +98,7 @@ export class Scene {
   context: DimensionContext = {
     getColor: (color: ColorDimensionConfig) => getColorDimensionFromData(this.data, color),
     getScale: (scale: ScaleDimensionConfig) => getScaleDimensionFromData(this.data, scale),
+    getScalar: (scalar: ScalarDimensionConfig) => getScalarDimensionFromData(this.data, scalar),
     getText: (text: TextDimensionConfig) => getTextDimensionFromData(this.data, text),
     getResource: (res: ResourceDimensionConfig) => getResourceDimensionFromData(this.data, res),
   };
@@ -94,6 +119,33 @@ export class Scene {
     }
   }
 
+  groupSelection() {
+    this.selection.pipe(first()).subscribe((currentSelectedElements) => {
+      const currentLayer = currentSelectedElements[0].parent!;
+
+      const newLayer = new GroupState(
+        {
+          type: 'group',
+          name: this.getNextElementName(true),
+          elements: [],
+        },
+        this,
+        currentSelectedElements[0].parent
+      );
+
+      currentSelectedElements.forEach((element: ElementState) => {
+        currentLayer.doAction(LayerActionID.Delete, element);
+        newLayer.doAction(LayerActionID.Duplicate, element, false);
+      });
+
+      currentLayer.elements.push(newLayer);
+
+      this.byName.set(newLayer.getName(), newLayer);
+
+      this.save();
+    });
+  }
+
   clearCurrentSelection() {
     let event: MouseEvent = new MouseEvent('click');
     this.selecto?.clickTarget(event, this.div);
@@ -106,7 +158,6 @@ export class Scene {
   }
 
   toggleAnchor(element: ElementState, k: keyof Anchor) {
-    console.log('TODO, smarter toggle', element.UID, element.anchor, k);
     const { div } = element;
     if (!div) {
       console.log('Not ready');

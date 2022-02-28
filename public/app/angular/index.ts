@@ -9,6 +9,7 @@ import './services/popover_srv';
 import './services/timer';
 import './services/AngularLoader';
 
+import '../angular/jquery_extended';
 import './dropdown_typeahead';
 import './autofill_event_fix';
 import './metric_segment';
@@ -31,6 +32,10 @@ import './components/info_popover';
 import './components/spectrum_picker';
 import './components/code_editor/code_editor';
 import './components/sql_part/sql_part_editor';
+import './components/HttpSettingsCtrl';
+import './components/TlsAuthSettingsCtrl';
+import './components/plugin_component';
 import './GrafanaCtrl';
 
 export { AngularApp } from './AngularApp';
+export { coreModule } from './core_module';
