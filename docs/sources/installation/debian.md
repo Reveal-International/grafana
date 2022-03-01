@@ -10,7 +10,11 @@ weight = 200
 
 This page explains how to install Grafana dependencies, download and install Grafana, get the service up and running on your Debian or Ubuntu system, and also describes the installation package details.
 
-**Note on upgrading:** While the process for upgrading Grafana is very similar to installing Grafana, there are some key backup steps you should perform. Read [Upgrading Grafana]({{< relref "upgrading.md" >}}) for tips and guidance on updating an existing installation.
+## Note on upgrading
+
+While the process for upgrading Grafana is very similar to installing Grafana, there are some key backup steps you should perform. Read [Upgrading Grafana]({{< relref "upgrading.md" >}}) for tips and guidance on updating an existing installation.
+
+> **Note:** You can use [Grafana Cloud](https://grafana.com/products/cloud/features/#cloud-logs) to avoid the overhead of installing, maintaining, and scaling your observability stack. The free forever plan includes Grafana, 10K Prometheus series, 50 GB logs, and more.[Create a free account to get started](https://grafana.com/auth/sign-up/create-user?pg=docs-grafana-install&plcmt=in-text).
 
 ## Hosted Grafana
 
@@ -101,7 +105,7 @@ If you install the `.deb` package, then you will need to manually update Grafana
 1. Copy and paste the code from the installation page into your command line and run. It follows the pattern shown below.
 
 ```bash
-sudo apt-get install -y adduser libfontconfig1
+sudo apt-get install -y adduser
 wget <.deb package url>
 sudo dpkg -i grafana<edition>_<version>_amd64.deb
 ```
@@ -136,6 +140,10 @@ Configure the Grafana server to start at boot:
 ```bash
 sudo systemctl enable grafana-server.service
 ```
+
+#### Serving Grafana on a port < 1024
+
+{{< docs/shared "systemd/bind-net-capabilities.md" >}}
 
 ### Start the server with init.d
 

@@ -8,21 +8,15 @@ weight = 150
 
 # Configuration
 
-Grafana has a number of configuration options that you can specify in a `.ini` configuration file or specified using environment variables.
+Grafana has default and custom configuration files. You can customize your Grafana instance by modifying the custom configuration file or by using environment variables. To see the list of settings for a Grafana instance, refer to [View server settings]({{< relref "view-server/view-server-settings.md" >}}).
 
-> **Note:** You must restart Grafana for any configuration changes to take effect.
+> **Note:** After you add custom options, [uncomment](#remove-comments-in-the-ini-files) the relevant sections of the configuration file. Restart Grafana for your changes to take effect.
 
-To see all settings currently applied to the Grafana server, refer to [View server settings]({{< relref "view-server/view-server-settings.md" >}}).
-
-## Config file locations
+## Configuration file location
 
 The default settings for a Grafana instance are stored in the `$WORKING_DIR/conf/defaults.ini` file. _Do not_ change the location in this file.
 
-_Do not_ change `defaults.ini`! Grafana defaults are stored in this file. Depending on your OS, make all configuration changes in either `custom.ini` or `grafana.ini`.
-
-- Default configuration from `$WORKING_DIR/conf/defaults.ini`
-- Custom configuration from `$WORKING_DIR/conf/custom.ini`
-- The custom configuration file path can be overridden using the `--config` parameter
+Depending on your OS, your custom configuration file is either the `$WORKING_DIR/conf/defaults.ini` file or the `/usr/local/etc/grafana/grafana.ini` file. The custom configuration file path can be overridden using the `--config` parameter.
 
 ### Linux
 
@@ -34,28 +28,28 @@ Refer to [Configure a Grafana Docker image]({{< relref "configure-docker.md" >}}
 
 ### Windows
 
-`sample.ini` is in the same directory as `defaults.ini` and contains all the settings commented out. Copy `sample.ini` and name it `custom.ini`.
+On Windows, the `sample.ini` file is located in the same directory as `defaults.ini` file. It contains all the settings commented out. Copy `sample.ini` and name it `custom.ini`.
 
 ### macOS
 
-By default, the configuration file is located at `/usr/local/etc/grafana/grafana.ini`. For a Grafana instance installed using Homebrew, edit the `grafana.ini` file directly. Otherwise, add a configuration file named `custom.ini` to the `conf` folder to override any of the settings defined in `conf/defaults.ini`.
+By default, the configuration file is located at `/usr/local/etc/grafana/grafana.ini`. For a Grafana instance installed using Homebrew, edit the `grafana.ini` file directly. Otherwise, add a configuration file named `custom.ini` to the `conf` folder to override the settings defined in `conf/defaults.ini`.
 
-## Comments in .ini Files
+## Remove comments in the .ini files
 
-Semicolons (the `;` char) are the standard way to comment out lines in a `.ini` file. If you want to change a setting, you must delete the semicolon (`;`) in front of the setting before it will work.
+Grafana uses semicolons (the `;` char) to comment out lines in a `.ini` file. You must uncomment each line in the `custom.ini` or the `grafana.ini` file that you are modify by removing `;` from the beginning of that line. Otherwise your changes will be ignored.
 
-**Example**
+For example:
 
 ```
 # The HTTP port  to use
 ;http_port = 3000
 ```
 
-A common problem is forgetting to uncomment a line in the `custom.ini` (or `grafana.ini`) file which causes the configuration option to be ignored.
+## Override configuration with environment variables
 
-## Configure with environment variables
+Do not use environment variables to _add_ new configuration settings. Instead, use environmental variables to _override_ existing options.
 
-All options in the configuration file can be overridden using environment variables using the syntax:
+To override an option:
 
 ```bash
 GF_<SectionName>_<KeyName>
@@ -320,6 +314,10 @@ The maximum number of open connections to the database.
 
 Sets the maximum amount of time a connection may be reused. The default is 14400 (which means 14400 seconds or 4 hours). For MySQL, this setting should be shorter than the [`wait_timeout`](https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_wait_timeout) variable.
 
+### locking_attempt_timeout_sec
+
+For "mysql", if `lockingMigration` feature toggle is set, specify the time (in seconds) to wait before failing to lock the database for the migrations. Default is 0.
+
 ### log_queries
 
 Set to `true` to log the sql calls and execution times.
@@ -470,6 +468,27 @@ Analytics ID here. By default this feature is disabled.
 
 Google Tag Manager ID, only enabled if you enter an ID here.
 
+### rudderstack_write_key
+
+If you want to track Grafana usage via Rudderstack specify _your_ Rudderstack
+Write Key here. The `rudderstack_data_plane_url` must also be provided for this
+feature to be enabled. By default this feature is disabled.
+
+### rudderstack_data_plane_url
+
+Rudderstack data plane url that will receive Rudderstack events. The
+`rudderstack_write_key` must also be provided for this feature to be enabled.
+
+### rudderstack_sdk_url
+
+Optional. If tracking with Rudderstack is enabled, you can provide a custom
+URL to load the Rudderstack SDK.
+
+### rudderstack_config_url
+
+Optional. If tracking with Rudderstack is enabled, you can provide a custom
+URL to load the Rudderstack config.
+
 ### application_insights_connection_string
 
 If you want to track Grafana usage via Azure Application Insights, then specify _your_ Application Insights connection string. Since the connection string contains semicolons, you need to wrap it in backticks (`). By default, tracking usage is disabled.
@@ -531,7 +550,7 @@ mitigate the risk of [Clickjacking](https://owasp.org/www-community/attacks/Clic
 
 ### strict_transport_security
 
-Set to `true` if you want to enable HTTP `Strict-Transport-Security` (HSTS) response header. This is only sent when HTTPS is enabled in this configuration. HSTS tells browsers that the site should only be accessed using HTTPS.
+Set to `true` if you want to enable HTTP `Strict-Transport-Security` (HSTS) response header. Only use this when HTTPS is enabled in your configuration, or when there is another upstream system that ensures your application does HTTPS (like a frontend load balancer). HSTS tells browsers that the site should only be accessed using HTTPS.
 
 ### strict_transport_security_max_age_seconds
 
@@ -571,11 +590,11 @@ Set to `false` to disable external snapshot publish endpoint (default `true`).
 
 ### external_snapshot_url
 
-Set root URL to a Grafana instance where you want to publish external snapshots (defaults to https://snapshots-origin.raintank.io).
+Set root URL to a Grafana instance where you want to publish external snapshots (defaults to https://snapshots.raintank.io).
 
 ### external_snapshot_name
 
-Set name for external snapshot button. Defaults to `Publish to snapshot.raintank.io`.
+Set name for external snapshot button. Defaults to `Publish to snapshots.raintank.io`.
 
 ### public_mode
 
@@ -616,7 +635,7 @@ Path to the default home dashboard. If this value is empty, then Grafana uses St
 
 Set to `false` to prohibit users from being able to sign up / create
 user accounts. Default is `false`. The admin user can still create
-users from the [Grafana Admin Pages](/reference/admin).
+users from the [Grafana Admin Pages]({{< relref "../manage-users/server-admin/server-admin-manage-users.md" >}}).
 
 ### allow_org_create
 
@@ -732,6 +751,12 @@ This setting is ignored if multiple OAuth providers are configured. Default is `
 How many seconds the OAuth state cookie lives before being deleted. Default is `600` (seconds)
 Administrators can increase this if they experience OAuth login state mismatch errors.
 
+### oauth_skip_org_role_update_sync
+
+Skip forced assignment of OrgID `1` or `auto_assign_org_id` for external logins. Default is `false`.
+Use this setting to distribute users with external login to multiple organizations.
+Otherwise, the users' organization would get reset on every new login, for example, via AzureAD.
+
 ### api_key_max_seconds_to_live
 
 Limit of API key seconds to live before expiration. Default is -1 (unlimited).
@@ -741,6 +766,12 @@ Limit of API key seconds to live before expiration. Default is -1 (unlimited).
 > Only available in Grafana 7.3+.
 
 Set to `true` to enable the AWS Signature Version 4 Authentication option for HTTP-based datasources. Default is `false`.
+
+### sigv4_verbose_logging
+
+> Only available in Grafana 8.4+.
+
+Set to `true` to enable verbose request signature logging when AWS Signature Version 4 Authentication is enabled. Default is `false`.
 
 <hr />
 
@@ -875,8 +906,6 @@ Email server settings.
 
 Enable this to allow Grafana to send email. Default is `false`.
 
-If the password contains `#` or `;`, then you have to wrap it with triple quotes. Example: """#password;"""
-
 ### host
 
 Default is `localhost:25`.
@@ -887,7 +916,7 @@ In case of SMTP auth, default is `empty`.
 
 ### password
 
-In case of SMTP auth, default is `empty`.
+In case of SMTP auth, default is `empty`. If the password contains `#` or `;`, then you have to wrap it with triple quotes. Example: """#password;"""
 
 ### cert_file
 
@@ -1119,7 +1148,7 @@ Sets a global limit on number of alert rules that can be created. Default is -1 
 
 ## [unified_alerting]
 
-For more information about the Grafana 8 alerts, refer to [Unified Alerting]({{< relref "../alerting/unified-alerting/_index.md" >}}).
+For more information about the Grafana alerts, refer to [Unified Alerting]({{< relref "../alerting/unified-alerting/_index.md" >}}).
 
 ### enabled
 
@@ -1203,15 +1232,15 @@ The interval string is a possibly signed sequence of decimal numbers, followed b
 
 ## [alerting]
 
-For more information about the Alerting feature in Grafana, refer to [Alerts overview]({{< relref "../alerting/_index.md" >}}).
+For more information about the legacy dashboard alerting feature in Grafana, refer to [Alerts overview]({{< relref "../alerting/_index.md" >}}).
 
 ### enabled
 
-Set to `false` to [enable Grafana 8 alerting]({{<relref "#unified_alerting">}}) and to disable legacy alerting engine. Default is `true`.
+Set to `false` to [enable Grafana alerting]({{<relref "#unified_alerting">}}) and to disable legacy alerting engine. to disable Grafana alerting, set to `true`.
 
 ### execute_alerts
 
-Turns off alert rule execution, but Alerting is still visible in the Grafana UI.
+Turns off alert rule execution, but alerting is still visible in the Grafana UI.
 
 ### error_or_timeout
 
@@ -1588,7 +1617,7 @@ We do _not_ recommend using this option. For more information, refer to [Plugin 
 
 ### plugin_admin_enabled
 
-Available to Grafana administrators only, the plugin admin app is set to `false` by default. Set it to `true` to enable the app.
+Available to Grafana administrators only, enables installing / uninstalling / updating plugins directly from the Grafana UI. Set to `true` by default. Setting it to `false` will hide the install / uninstall / update controls.
 
 For more information, refer to [Plugin catalog]({{< relref "../plugins/catalog.md" >}}).
 
@@ -1599,6 +1628,10 @@ Set to `true` if you want to enable external management of plugins. Default is `
 ### plugin_catalog_url
 
 Custom install/learn more URL for enterprise plugins. Defaults to https://grafana.com/grafana/plugins/.
+
+### plugin_catalog_hidden_plugins
+
+Enter a comma-separated list of plugin identifiers to hide in the plugin catalog.
 
 <hr>
 
@@ -1713,13 +1746,19 @@ Mode `reusable` will have one browser instance and will create a new incognito p
 
 ### rendering_clustering_mode
 
-When rendering_mode = clustered you can instruct how many browsers or incognito pages can execute concurrently. Default is `browser` and will cluster using browser instances.
+When rendering_mode = clustered, you can instruct how many browsers or incognito pages can execute concurrently. Default is `browser` and will cluster using browser instances.
 
 Mode `context` will cluster using incognito pages.
 
 ### rendering_clustering_max_concurrency
 
-When rendering_mode = clustered you can define the maximum number of browser instances/incognito pages that can execute concurrently.
+When rendering_mode = clustered, you can define the maximum number of browser instances/incognito pages that can execute concurrently. Default is `5`.
+
+### rendering_clustering_timeout
+
+> **Note**: Available in grafana-image-renderer v3.3.0 and later versions.
+
+When rendering_mode = clustered, you can specify the duration a rendering request can take before it will time out. Default is `30` seconds.
 
 ### rendering_viewport_max_width
 
@@ -1790,6 +1829,10 @@ Set this to `true` to have date formats automatically derived from your browser 
 ### default_timezone
 
 Used as the default time zone for user preferences. Can be either `browser` for the browser local time zone or a time zone name from the IANA Time Zone database, such as `UTC` or `Europe/Amsterdam`.
+
+### default_week_start
+
+Set the default start of the week, valid values are: `saturday`, `sunday`, `monday` or `browser` to use the browser locale to define the first day of the week. Default is `browser`.
 
 ## [expressions]
 

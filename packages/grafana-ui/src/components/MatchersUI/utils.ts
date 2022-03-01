@@ -71,7 +71,8 @@ export function useFieldDisplayNames(data: DataFrame[], filter?: (field: Field) 
 export function useSelectOptions(
   displayNames: FrameFieldsDisplayNames,
   currentName?: string,
-  firstItem?: SelectableValue<string>
+  firstItem?: SelectableValue<string>,
+  fieldType?: string
 ): Array<SelectableValue<string>> {
   return useMemo(() => {
     let found = false;
@@ -84,11 +85,13 @@ export function useSelectOptions(
         found = true;
       }
       const field = displayNames.fields.get(name);
-      options.push({
-        value: name,
-        label: name,
-        icon: field ? getFieldTypeIcon(field) : undefined,
-      });
+      if (!fieldType || fieldType === field?.type) {
+        options.push({
+          value: name,
+          label: name,
+          icon: field ? getFieldTypeIcon(field) : undefined,
+        });
+      }
     }
     for (const name of displayNames.raw) {
       if (!displayNames.display.has(name)) {
@@ -109,5 +112,5 @@ export function useSelectOptions(
       });
     }
     return options;
-  }, [displayNames, currentName, firstItem]);
+  }, [displayNames, currentName, firstItem, fieldType]);
 }

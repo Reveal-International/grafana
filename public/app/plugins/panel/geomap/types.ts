@@ -1,7 +1,10 @@
-import { MapLayerOptions } from '@grafana/data';
+import { MapLayerHandler, MapLayerOptions } from '@grafana/data';
+import { HideableFieldConfig } from '@grafana/schema';
+import { LayerElement } from 'app/core/components/Layers/types';
+import BaseLayer from 'ol/layer/Base';
 import { Units } from 'ol/proj/Units';
+import { StyleConfig } from './style/types';
 import { MapCenterID } from './view';
-import { TooltipExtension } from '@grafana/schema';
 
 export interface ControlsOptions {
   // Zoom (upper left)
@@ -9,6 +12,9 @@ export interface ControlsOptions {
 
   // let the mouse wheel zoom
   mouseWheelZoom?: boolean;
+
+  // Add legend control
+  showLegend?: boolean;
 
   // Lower right
   showAttribution?: boolean;
@@ -38,28 +44,9 @@ export const defaultView: MapViewConfig = {
   zoom: 1,
 };
 
-export interface ImageLayerCoordinates {
-  lat?: number;
-  lon?: number;
-}
-
-export const defaultImageLayerCoordinates: ImageLayerConfig = {};
-
-export interface ImageLayerConfig {
-  url?: string;
-  angle?: number;
-  synchronizeMapAngle?: boolean;
-  restrictMapExtent?: boolean;
-  bottomLeftCoordinates?: ImageLayerCoordinates;
-  topRightCoordinates?: ImageLayerCoordinates;
-}
-
-export interface TooltipOptions {
-  extensions?: [TooltipExtension];
-  title?: string;
-  titleShowLocation: boolean;
-  titleCounterProperty?: string;
-  dateFormat?: string;
+/** Support hide from legend/tooltip */
+export interface GeomapFieldConfig extends HideableFieldConfig {
+  // nothing custom yet
 }
 
 export interface GeomapPanelOptions {
@@ -67,6 +54,33 @@ export interface GeomapPanelOptions {
   controls: ControlsOptions;
   basemap: MapLayerOptions;
   layers: MapLayerOptions[];
-  imageLayer: ImageLayerConfig;
-  tooltips: TooltipOptions;
+}
+export interface FeatureStyleConfig {
+  style?: StyleConfig;
+  check?: FeatureRuleConfig;
+}
+export interface FeatureRuleConfig {
+  property: string;
+  operation: ComparisonOperation;
+  value: string | boolean | number;
+}
+
+export enum ComparisonOperation {
+  EQ = 'eq',
+  NEQ = 'neq',
+  LT = 'lt',
+  LTE = 'lte',
+  GT = 'gt',
+  GTE = 'gte',
+}
+
+//-------------------
+// Runtime model
+//-------------------
+export interface MapLayerState<TConfig = any> extends LayerElement {
+  options: MapLayerOptions<TConfig>;
+  handler: MapLayerHandler;
+  layer: BaseLayer; // the openlayers instance
+  onChange: (cfg: MapLayerOptions<TConfig>) => void;
+  isBasemap?: boolean;
 }

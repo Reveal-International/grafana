@@ -90,7 +90,13 @@ export const PlotLegend: React.FC<PlotLegendProps> = ({
 
   return (
     <VizLayout.Legend placement={placement} {...vizLayoutLegendProps}>
-      <VizLegend placement={placement} items={legendItems} displayMode={displayMode} />
+      <VizLegend
+        placement={placement}
+        items={legendItems}
+        displayMode={displayMode}
+        sortBy={vizLayoutLegendProps.sortBy}
+        sortDesc={vizLayoutLegendProps.sortDesc}
+      />
     </VizLayout.Legend>
   );
 };

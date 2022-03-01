@@ -1,9 +1,11 @@
+import { AbstractLabelOperator, AbstractQuery } from '@grafana/data';
 import {
   escapeLabelValueInExactSelector,
   escapeLabelValueInRegexSelector,
   expandRecordingRules,
   fixSummariesMetadata,
   parseSelector,
+  toPromLikeQuery,
 } from './language_utils';
 
 describe('parseSelector()', () => {
@@ -79,23 +81,24 @@ describe('parseSelector()', () => {
 
 describe('fixSummariesMetadata', () => {
   const synthetics = {
-    ALERTS: [
-      {
-        type: 'counter',
-        help:
-          'Time series showing pending and firing alerts. The sample value is set to 1 as long as the alert is in the indicated active (pending or firing) state.',
-      },
-    ],
+    ALERTS: {
+      type: 'counter',
+      help: 'Time series showing pending and firing alerts. The sample value is set to 1 as long as the alert is in the indicated active (pending or firing) state.',
+    },
   };
   it('returns only synthetics on empty metadata', () => {
     expect(fixSummariesMetadata({})).toEqual({ ...synthetics });
   });
 
   it('returns unchanged metadata if no summary is present', () => {
-    const metadata = {
+    const metadataRaw = {
       foo: [{ type: 'not_a_summary', help: 'foo help' }],
     };
-    expect(fixSummariesMetadata(metadata)).toEqual({ ...metadata, ...synthetics });
+
+    const metadata = {
+      foo: { type: 'not_a_summary', help: 'foo help' },
+    };
+    expect(fixSummariesMetadata(metadataRaw)).toEqual({ ...metadata, ...synthetics });
   });
 
   it('returns metadata with added count and sum for a summary', () => {
@@ -104,10 +107,10 @@ describe('fixSummariesMetadata', () => {
       bar: [{ type: 'summary', help: 'bar help' }],
     };
     const expected = {
-      foo: [{ type: 'not_a_summary', help: 'foo help' }],
-      bar: [{ type: 'summary', help: 'bar help' }],
-      bar_count: [{ type: 'counter', help: 'Count of events that have been observed for the base metric (bar help)' }],
-      bar_sum: [{ type: 'counter', help: 'Total sum of all observed values for the base metric (bar help)' }],
+      foo: { type: 'not_a_summary', help: 'foo help' },
+      bar: { type: 'summary', help: 'bar help' },
+      bar_count: { type: 'counter', help: 'Count of events that have been observed for the base metric (bar help)' },
+      bar_sum: { type: 'counter', help: 'Total sum of all observed values for the base metric (bar help)' },
     };
     expect(fixSummariesMetadata(metadata)).toEqual({ ...expected, ...synthetics });
   });
@@ -118,13 +121,14 @@ describe('fixSummariesMetadata', () => {
       bar: [{ type: 'histogram', help: 'bar help' }],
     };
     const expected = {
-      foo: [{ type: 'not_a_histogram', help: 'foo help' }],
-      bar: [{ type: 'histogram', help: 'bar help' }],
-      bar_bucket: [{ type: 'counter', help: 'Cumulative counters for the observation buckets (bar help)' }],
-      bar_count: [
-        { type: 'counter', help: 'Count of events that have been observed for the histogram metric (bar help)' },
-      ],
-      bar_sum: [{ type: 'counter', help: 'Total sum of all observed values for the histogram metric (bar help)' }],
+      foo: { type: 'not_a_histogram', help: 'foo help' },
+      bar: { type: 'histogram', help: 'bar help' },
+      bar_bucket: { type: 'counter', help: 'Cumulative counters for the observation buckets (bar help)' },
+      bar_count: {
+        type: 'counter',
+        help: 'Count of events that have been observed for the histogram metric (bar help)',
+      },
+      bar_sum: { type: 'counter', help: 'Total sum of all observed values for the histogram metric (bar help)' },
     };
     expect(fixSummariesMetadata(metadata)).toEqual({ ...expected, ...synthetics });
   });
@@ -214,5 +218,25 @@ describe('escapeLabelValueInRegexSelector()', () => {
     expect(escapeLabelValueInRegexSelector('t\\e"s+t\nl\n$ab"e\\l')).toBe(
       't\\\\\\\\e\\"s\\\\+t\\nl\\n\\\\$ab\\"e\\\\\\\\l'
     );
+  });
+});
+
+describe('toPromLikeQuery', () => {
+  it('export abstract query to PromQL-like query', () => {
+    const abstractQuery: AbstractQuery = {
+      refId: 'bar',
+      labelMatchers: [
+        { name: 'label1', operator: AbstractLabelOperator.Equal, value: 'value1' },
+        { name: 'label2', operator: AbstractLabelOperator.NotEqual, value: 'value2' },
+        { name: 'label3', operator: AbstractLabelOperator.EqualRegEx, value: 'value3' },
+        { name: 'label4', operator: AbstractLabelOperator.NotEqualRegEx, value: 'value4' },
+      ],
+    };
+
+    expect(toPromLikeQuery(abstractQuery)).toMatchObject({
+      refId: 'bar',
+      expr: '{label1="value1", label2!="value2", label3=~"value3", label4!~"value4"}',
+      range: true,
+    });
   });
 });
