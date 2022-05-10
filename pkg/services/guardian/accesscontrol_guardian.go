@@ -22,28 +22,33 @@ var _ DashboardGuardian = new(AccessControlDashboardGuardian)
 
 func NewAccessControlDashboardGuardian(
 	ctx context.Context, dashboardId int64, user *models.SignedInUser,
-	store *sqlstore.SQLStore, ac accesscontrol.AccessControl, permissionsServices accesscontrol.PermissionsServices,
+	store sqlstore.Store, ac accesscontrol.AccessControl,
+	folderPermissionsService accesscontrol.FolderPermissionsService,
+	dashboardPermissionsService accesscontrol.DashboardPermissionsService,
 ) *AccessControlDashboardGuardian {
 	return &AccessControlDashboardGuardian{
-		ctx:                ctx,
-		log:                log.New("dashboard.permissions"),
-		dashboardID:        dashboardId,
-		user:               user,
-		store:              store,
-		ac:                 ac,
-		permissionServices: permissionsServices,
+		ctx:                         ctx,
+		log:                         log.New("dashboard.permissions"),
+		dashboardID:                 dashboardId,
+		user:                        user,
+		store:                       store,
+		ac:                          ac,
+		folderPermissionsService:    folderPermissionsService,
+		dashboardPermissionsService: dashboardPermissionsService,
 	}
 }
 
 type AccessControlDashboardGuardian struct {
-	ctx                context.Context
-	log                log.Logger
-	dashboardID        int64
-	dashboard          *models.Dashboard
-	user               *models.SignedInUser
-	store              *sqlstore.SQLStore
-	ac                 accesscontrol.AccessControl
-	permissionServices accesscontrol.PermissionsServices
+	ctx                         context.Context
+	log                         log.Logger
+	dashboardID                 int64
+	dashboard                   *models.Dashboard
+	parentFolderUID             string
+	user                        *models.SignedInUser
+	store                       sqlstore.Store
+	ac                          accesscontrol.AccessControl
+	folderPermissionsService    accesscontrol.FolderPermissionsService
+	dashboardPermissionsService accesscontrol.DashboardPermissionsService
 }
 
 func (a *AccessControlDashboardGuardian) CanSave() (bool, error) {
@@ -52,12 +57,12 @@ func (a *AccessControlDashboardGuardian) CanSave() (bool, error) {
 	}
 
 	if a.dashboard.IsFolder {
-		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersWrite, folderScope(a.dashboardID)))
+		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)))
 	}
 
 	return a.evaluate(accesscontrol.EvalAny(
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsWrite, dashboardScope(a.dashboard.Id)),
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsWrite, folderScope(a.dashboard.FolderId)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsWrite, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
 	))
 }
 
@@ -65,18 +70,17 @@ func (a *AccessControlDashboardGuardian) CanEdit() (bool, error) {
 	if err := a.loadDashboard(); err != nil {
 		return false, err
 	}
-
 	if setting.ViewersCanEdit {
 		return a.CanView()
 	}
 
 	if a.dashboard.IsFolder {
-		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersWrite, folderScope(a.dashboardID)))
+		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)))
 	}
 
 	return a.evaluate(accesscontrol.EvalAny(
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsWrite, dashboardScope(a.dashboard.Id)),
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsWrite, folderScope(a.dashboard.FolderId)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsWrite, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
 	))
 }
 
@@ -86,12 +90,12 @@ func (a *AccessControlDashboardGuardian) CanView() (bool, error) {
 	}
 
 	if a.dashboard.IsFolder {
-		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersRead, folderScope(a.dashboardID)))
+		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersRead, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)))
 	}
 
 	return a.evaluate(accesscontrol.EvalAny(
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsRead, dashboardScope(a.dashboard.Id)),
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsRead, folderScope(a.dashboard.FolderId)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsRead, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsRead, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
 	))
 }
 
@@ -102,19 +106,19 @@ func (a *AccessControlDashboardGuardian) CanAdmin() (bool, error) {
 
 	if a.dashboard.IsFolder {
 		return a.evaluate(accesscontrol.EvalAll(
-			accesscontrol.EvalPermission(dashboards.ActionFoldersPermissionsRead, folderScope(a.dashboard.Id)),
-			accesscontrol.EvalPermission(dashboards.ActionFoldersPermissionsWrite, folderScope(a.dashboard.Id)),
+			accesscontrol.EvalPermission(dashboards.ActionFoldersPermissionsRead, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)),
+			accesscontrol.EvalPermission(dashboards.ActionFoldersPermissionsWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)),
 		))
 	}
 
 	return a.evaluate(accesscontrol.EvalAny(
 		accesscontrol.EvalAll(
-			accesscontrol.EvalPermission(accesscontrol.ActionDashboardsPermissionsRead, dashboardScope(a.dashboard.Id)),
-			accesscontrol.EvalPermission(accesscontrol.ActionDashboardsPermissionsWrite, dashboardScope(a.dashboard.Id)),
+			accesscontrol.EvalPermission(dashboards.ActionDashboardsPermissionsRead, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
+			accesscontrol.EvalPermission(dashboards.ActionDashboardsPermissionsWrite, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
 		),
 		accesscontrol.EvalAll(
-			accesscontrol.EvalPermission(accesscontrol.ActionDashboardsPermissionsRead, folderScope(a.dashboard.FolderId)),
-			accesscontrol.EvalPermission(accesscontrol.ActionDashboardsPermissionsWrite, folderScope(a.dashboard.FolderId)),
+			accesscontrol.EvalPermission(dashboards.ActionDashboardsPermissionsRead, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
+			accesscontrol.EvalPermission(dashboards.ActionDashboardsPermissionsWrite, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
 		),
 	))
 }
@@ -125,12 +129,12 @@ func (a *AccessControlDashboardGuardian) CanDelete() (bool, error) {
 	}
 
 	if a.dashboard.IsFolder {
-		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersDelete, folderScope(a.dashboard.Id)))
+		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersDelete, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.dashboard.Uid)))
 	}
 
 	return a.evaluate(accesscontrol.EvalAny(
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsDelete, dashboardScope(a.dashboard.Id)),
-		accesscontrol.EvalPermission(accesscontrol.ActionDashboardsDelete, folderScope(a.dashboard.FolderId)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsDelete, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(a.dashboard.Uid)),
+		accesscontrol.EvalPermission(dashboards.ActionDashboardsDelete, dashboards.ScopeFoldersProvider.GetResourceScopeUID(a.parentFolderUID)),
 	))
 }
 
@@ -138,8 +142,11 @@ func (a *AccessControlDashboardGuardian) CanCreate(folderID int64, isFolder bool
 	if isFolder {
 		return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionFoldersCreate))
 	}
-
-	return a.evaluate(accesscontrol.EvalPermission(accesscontrol.ActionDashboardsCreate, folderScope(folderID)))
+	folder, err := a.loadParentFolder(folderID)
+	if err != nil {
+		return false, err
+	}
+	return a.evaluate(accesscontrol.EvalPermission(dashboards.ActionDashboardsCreate, dashboards.ScopeFoldersProvider.GetResourceScopeUID(folder.Uid)))
 }
 
 func (a *AccessControlDashboardGuardian) evaluate(evaluator accesscontrol.Evaluator) (bool, error) {
@@ -166,9 +173,11 @@ func (a *AccessControlDashboardGuardian) GetAcl() ([]*models.DashboardAclInfoDTO
 		return nil, err
 	}
 
-	svc := a.permissionServices.GetDashboardService()
+	var svc accesscontrol.PermissionsService
 	if a.dashboard.IsFolder {
-		svc = a.permissionServices.GetFolderService()
+		svc = a.folderPermissionsService
+	} else {
+		svc = a.dashboardPermissionsService
 	}
 
 	permissions, err := svc.GetPermissions(a.ctx, a.user, strconv.FormatInt(a.dashboard.Id, 10))
@@ -178,7 +187,7 @@ func (a *AccessControlDashboardGuardian) GetAcl() ([]*models.DashboardAclInfoDTO
 
 	acl := make([]*models.DashboardAclInfoDTO, 0, len(permissions))
 	for _, p := range permissions {
-		if !p.IsManaged() {
+		if !p.IsManaged {
 			continue
 		}
 
@@ -258,15 +267,25 @@ func (a *AccessControlDashboardGuardian) loadDashboard() error {
 		if err := a.store.GetDashboard(a.ctx, query); err != nil {
 			return err
 		}
+		if !query.Result.IsFolder {
+			folder, err := a.loadParentFolder(query.Result.FolderId)
+			if err != nil {
+				return err
+			}
+			a.parentFolderUID = folder.Uid
+		}
 		a.dashboard = query.Result
 	}
 	return nil
 }
 
-func dashboardScope(dashboardID int64) string {
-	return accesscontrol.Scope("dashboards", "id", strconv.FormatInt(dashboardID, 10))
-}
-
-func folderScope(folderID int64) string {
-	return dashboards.ScopeFoldersProvider.GetResourceScope(strconv.FormatInt(folderID, 10))
+func (a *AccessControlDashboardGuardian) loadParentFolder(folderID int64) (*models.Dashboard, error) {
+	if folderID == 0 {
+		return &models.Dashboard{Uid: accesscontrol.GeneralFolderUID}, nil
+	}
+	folderQuery := &models.GetDashboardQuery{Id: folderID, OrgId: a.user.OrgId}
+	if err := a.store.GetDashboard(a.ctx, folderQuery); err != nil {
+		return nil, err
+	}
+	return folderQuery.Result, nil
 }

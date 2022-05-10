@@ -1,9 +1,11 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
+import React, { useEffect, useState } from 'react';
+import { Draggable } from 'react-beautiful-dnd';
+
 import { DataSourceApi, GrafanaTheme2 } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
-import { Button, useStyles2 } from '@grafana/ui';
-import React from 'react';
-import { Draggable } from 'react-beautiful-dnd';
+import { Button, Icon, Tooltip, useStyles2 } from '@grafana/ui';
+
 import {
   VisualQueryModeller,
   QueryBuilderOperation,
@@ -11,6 +13,7 @@ import {
   QueryBuilderOperationDef,
   QueryBuilderOperationParamDef,
 } from '../shared/types';
+
 import { OperationHeader } from './OperationHeader';
 import { getOperationParamEditor } from './OperationParamEditor';
 import { getOperationParamId } from './operationUtils';
@@ -24,6 +27,7 @@ export interface Props {
   onChange: (index: number, update: QueryBuilderOperation) => void;
   onRemove: (index: number) => void;
   onRunQuery: () => void;
+  highlight?: boolean;
 }
 
 export function OperationEditor({
@@ -35,9 +39,12 @@ export function OperationEditor({
   queryModeller,
   query,
   datasource,
+  highlight,
 }: Props) {
   const styles = useStyles2(getStyles);
   const def = queryModeller.getOperationDef(operation.id);
+  const shouldHighlight = useHighlight(highlight);
+
   if (!def) {
     return <span>Operation {operation.id} not found</span>;
   }
@@ -70,9 +77,14 @@ export function OperationEditor({
     operationElements.push(
       <div className={styles.paramRow} key={`${paramIndex}-1`}>
         {!paramDef.hideName && (
-          <label className={styles.paramName} htmlFor={getOperationParamId(index, paramIndex)}>
-            {paramDef.name}
-          </label>
+          <div className={styles.paramName}>
+            <label htmlFor={getOperationParamId(index, paramIndex)}>{paramDef.name}</label>
+            {paramDef.description && (
+              <Tooltip placement="top" content={paramDef.description} theme="info">
+                <Icon name="info-circle" size="sm" className={styles.infoIcon} />
+              </Tooltip>
+            )}
+          </div>
         )}
         <div className={styles.paramValue}>
           <Stack gap={0.5} direction="row" alignItems="center" wrap={false}>
@@ -117,7 +129,7 @@ export function OperationEditor({
     <Draggable draggableId={`operation-${index}`} index={index}>
       {(provided) => (
         <div
-          className={styles.card}
+          className={cx(styles.card, shouldHighlight && styles.cardHighlight)}
           ref={provided.innerRef}
           {...provided.draggableProps}
           data-testid={`operations.${index}.wrapper`}
@@ -143,6 +155,29 @@ export function OperationEditor({
       )}
     </Draggable>
   );
+}
+
+/**
+ * When highlight is switched on makes sure it is switched of right away, so we just flash the highlight and then fade
+ * out.
+ * @param highlight
+ */
+function useHighlight(highlight?: boolean) {
+  const [keepHighlight, setKeepHighlight] = useState(true);
+  useEffect(() => {
+    let t: any;
+    if (highlight) {
+      t = setTimeout(() => {
+        setKeepHighlight(false);
+      }, 1);
+    } else {
+      setKeepHighlight(true);
+    }
+
+    return () => clearTimeout(t);
+  }, [highlight]);
+
+  return keepHighlight && highlight;
 }
 
 function renderAddRestParamButton(
@@ -193,15 +228,25 @@ const getStyles = (theme: GrafanaTheme2) => {
       borderRadius: theme.shape.borderRadius(1),
       marginBottom: theme.spacing(1),
       position: 'relative',
+      transition: 'all 1s ease-in 0s',
+    }),
+    cardHighlight: css({
+      boxShadow: `0px 0px 4px 0px ${theme.colors.primary.border}`,
+      border: `1px solid ${theme.colors.primary.border}`,
     }),
     infoIcon: css({
+      marginLeft: theme.spacing(0.5),
       color: theme.colors.text.secondary,
+      ':hover': {
+        color: theme.colors.text.primary,
+      },
     }),
     body: css({
       margin: theme.spacing(1, 1, 0.5, 1),
       display: 'table',
     }),
     paramRow: css({
+      label: 'paramRow',
       display: 'table-row',
       verticalAlign: 'middle',
     }),
@@ -214,8 +259,8 @@ const getStyles = (theme: GrafanaTheme2) => {
       height: '32px',
     }),
     paramValue: css({
+      label: 'paramValue',
       display: 'table-cell',
-      paddingBottom: theme.spacing(0.5),
       verticalAlign: 'middle',
     }),
     restParam: css({

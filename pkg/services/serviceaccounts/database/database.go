@@ -11,7 +11,6 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"xorm.io/xorm"
@@ -157,7 +156,7 @@ func (s *ServiceAccountsStoreImpl) ListTokens(ctx context.Context, orgID int64, 
 		sess = dbSession.
 			Join("inner", quotedUser, quotedUser+".id = api_key.service_account_id").
 			Where(quotedUser+".org_id=? AND "+quotedUser+".id=?", orgID, serviceAccountID).
-			Asc("name")
+			Asc("api_key.name")
 
 		return sess.Find(&result)
 	})
@@ -231,6 +230,47 @@ func (s *ServiceAccountsStoreImpl) RetrieveServiceAccount(ctx context.Context, o
 	return serviceAccount, nil
 }
 
+func (s *ServiceAccountsStoreImpl) RetrieveServiceAccountIdByName(ctx context.Context, orgID int64, name string) (int64, error) {
+	serviceAccount := &struct {
+		Id int64
+	}{}
+
+	err := s.sqlStore.WithDbSession(ctx, func(dbSession *sqlstore.DBSession) error {
+		sess := dbSession.Table("user")
+
+		whereConditions := []string{
+			fmt.Sprintf("%s.name = ?",
+				s.sqlStore.Dialect.Quote("user")),
+			fmt.Sprintf("%s.org_id = ?",
+				s.sqlStore.Dialect.Quote("user")),
+			fmt.Sprintf("%s.is_service_account = %s",
+				s.sqlStore.Dialect.Quote("user"),
+				s.sqlStore.Dialect.BooleanStr(true)),
+		}
+		whereParams := []interface{}{name, orgID}
+
+		sess.Where(strings.Join(whereConditions, " AND "), whereParams...)
+
+		sess.Cols(
+			"user.id",
+		)
+
+		if ok, err := sess.Get(serviceAccount); err != nil {
+			return err
+		} else if !ok {
+			return serviceaccounts.ErrServiceAccountNotFound
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return serviceAccount.Id, nil
+}
+
 func (s *ServiceAccountsStoreImpl) UpdateServiceAccount(ctx context.Context,
 	orgID, serviceAccountID int64,
 	saForm *serviceaccounts.UpdateServiceAccountForm) (*serviceaccounts.ServiceAccountProfileDTO, error) {
@@ -253,7 +293,7 @@ func (s *ServiceAccountsStoreImpl) UpdateServiceAccount(ctx context.Context,
 			orgUser.Role = *saForm.Role
 			orgUser.Updated = updateTime
 
-			if _, err := sess.ID(orgUser.Id).Update(&orgUser); err != nil {
+			if _, err := sess.Where("org_id = ? AND user_id = ?", orgID, serviceAccountID).Update(&orgUser); err != nil {
 				return err
 			}
 
@@ -288,7 +328,7 @@ func (s *ServiceAccountsStoreImpl) UpdateServiceAccount(ctx context.Context,
 }
 
 func (s *ServiceAccountsStoreImpl) SearchOrgServiceAccounts(
-	ctx context.Context, orgID int64, query string, page int, limit int,
+	ctx context.Context, orgID int64, query string, filter serviceaccounts.ServiceAccountFilter, page int, limit int,
 	signedInUser *models.SignedInUser,
 ) (*serviceaccounts.SearchServiceAccountsResult, error) {
 	searchResult := &serviceaccounts.SearchServiceAccountsResult{
@@ -313,8 +353,8 @@ func (s *ServiceAccountsStoreImpl) SearchOrgServiceAccounts(
 				s.sqlStore.Dialect.Quote("user"),
 				s.sqlStore.Dialect.BooleanStr(true)))
 
-		if s.sqlStore.Cfg.IsFeatureToggleEnabled(featuremgmt.FlagAccesscontrol) {
-			acFilter, err := accesscontrol.Filter(signedInUser, "org_user.user_id", "serviceaccounts", serviceaccounts.ActionRead)
+		if !accesscontrol.IsDisabled(s.sqlStore.Cfg) {
+			acFilter, err := accesscontrol.Filter(signedInUser, "org_user.user_id", "serviceaccounts:id:", serviceaccounts.ActionRead)
 			if err != nil {
 				return err
 			}
@@ -326,6 +366,20 @@ func (s *ServiceAccountsStoreImpl) SearchOrgServiceAccounts(
 			queryWithWildcards := "%" + query + "%"
 			whereConditions = append(whereConditions, "(email "+s.sqlStore.Dialect.LikeStr()+" ? OR name "+s.sqlStore.Dialect.LikeStr()+" ? OR login "+s.sqlStore.Dialect.LikeStr()+" ?)")
 			whereParams = append(whereParams, queryWithWildcards, queryWithWildcards, queryWithWildcards)
+		}
+
+		switch filter {
+		case serviceaccounts.FilterIncludeAll:
+			// pass
+		case serviceaccounts.FilterOnlyExpiredTokens:
+			now := time.Now().Unix()
+			// we do a subquery to remove duplicates coming from joining in api_keys, if we find more than one api key that has expired
+			whereConditions = append(
+				whereConditions,
+				"(SELECT count(*) FROM api_key WHERE api_key.service_account_id = org_user.user_id AND api_key.expires < ?) > 0")
+			whereParams = append(whereParams, now)
+		default:
+			s.log.Warn("invalid filter user for service account filtering", "service account search filtering", filter)
 		}
 
 		if len(whereConditions) > 0 {

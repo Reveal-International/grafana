@@ -40,6 +40,15 @@ type ServiceAccountDTO struct {
 	AvatarUrl     string          `json:"avatarUrl"`
 	AccessControl map[string]bool `json:"accessControl,omitempty"`
 }
+
+type AddServiceAccountTokenCommand struct {
+	Name          string         `json:"name" binding:"Required"`
+	OrgId         int64          `json:"-"`
+	Key           string         `json:"-"`
+	SecondsToLive int64          `json:"secondsToLive"`
+	Result        *models.ApiKey `json:"-"`
+}
+
 type SearchServiceAccountsResult struct {
 	TotalCount      int64                `json:"totalCount"`
 	ServiceAccounts []*ServiceAccountDTO `json:"serviceAccounts"`
@@ -60,3 +69,10 @@ type ServiceAccountProfileDTO struct {
 	Teams         []string        `json:"teams" xorm:"-"`
 	AccessControl map[string]bool `json:"accessControl,omitempty" xorm:"-"`
 }
+
+type ServiceAccountFilter string // used for filtering
+
+const (
+	FilterOnlyExpiredTokens ServiceAccountFilter = "expiredTokens"
+	FilterIncludeAll        ServiceAccountFilter = "all"
+)

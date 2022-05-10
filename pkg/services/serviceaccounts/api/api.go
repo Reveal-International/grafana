@@ -12,7 +12,6 @@ import (
 	"github.com/grafana/grafana/pkg/middleware"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
-	acmiddleware "github.com/grafana/grafana/pkg/services/accesscontrol/middleware"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts/database"
@@ -53,18 +52,24 @@ func (api *ServiceAccountsAPI) RegisterAPIEndpoints(
 		return
 	}
 
-	auth := acmiddleware.Middleware(api.accesscontrol)
+	auth := accesscontrol.Middleware(api.accesscontrol)
 	api.RouterRegister.Group("/api/serviceaccounts", func(serviceAccountsRoute routing.RouteRegister) {
-		serviceAccountsRoute.Get("/search", auth(middleware.ReqOrgAdmin, accesscontrol.EvalPermission(serviceaccounts.ActionRead)), routing.Wrap(api.SearchOrgServiceAccountsWithPaging))
+		serviceAccountsRoute.Get("/search", auth(middleware.ReqOrgAdmin,
+			accesscontrol.EvalPermission(serviceaccounts.ActionRead)), routing.Wrap(api.SearchOrgServiceAccountsWithPaging))
 		serviceAccountsRoute.Post("/", auth(middleware.ReqOrgAdmin,
 			accesscontrol.EvalPermission(serviceaccounts.ActionCreate)), routing.Wrap(api.CreateServiceAccount))
 		serviceAccountsRoute.Get("/:serviceAccountId", auth(middleware.ReqOrgAdmin,
 			accesscontrol.EvalPermission(serviceaccounts.ActionRead, serviceaccounts.ScopeID)), routing.Wrap(api.RetrieveServiceAccount))
 		serviceAccountsRoute.Patch("/:serviceAccountId", auth(middleware.ReqOrgAdmin,
 			accesscontrol.EvalPermission(serviceaccounts.ActionWrite, serviceaccounts.ScopeID)), routing.Wrap(api.updateServiceAccount))
-		serviceAccountsRoute.Delete("/:serviceAccountId", auth(middleware.ReqOrgAdmin, accesscontrol.EvalPermission(serviceaccounts.ActionDelete, serviceaccounts.ScopeID)), routing.Wrap(api.DeleteServiceAccount))
-		serviceAccountsRoute.Post("/upgradeall", auth(middleware.ReqOrgAdmin, accesscontrol.EvalPermission(serviceaccounts.ActionCreate)), routing.Wrap(api.UpgradeServiceAccounts))
-		serviceAccountsRoute.Post("/convert/:keyId", auth(middleware.ReqOrgAdmin, accesscontrol.EvalPermission(serviceaccounts.ActionCreate, serviceaccounts.ScopeID)), routing.Wrap(api.ConvertToServiceAccount))
+		serviceAccountsRoute.Delete("/:serviceAccountId", auth(middleware.ReqOrgAdmin,
+			accesscontrol.EvalPermission(serviceaccounts.ActionDelete, serviceaccounts.ScopeID)), routing.Wrap(api.DeleteServiceAccount))
+		// TODO:
+		// for 9.0 please reenable this with issue https://github.com/grafana/grafana-enterprise/issues/2969
+		// serviceAccountsRoute.Post("/upgradeall", auth(middleware.ReqOrgAdmin,
+		// 	accesscontrol.EvalPermission(serviceaccounts.ActionCreate)), routing.Wrap(api.UpgradeServiceAccounts))
+		// serviceAccountsRoute.Post("/convert/:keyId", auth(middleware.ReqOrgAdmin,
+		// 	accesscontrol.EvalPermission(serviceaccounts.ActionCreate, serviceaccounts.ScopeID)), routing.Wrap(api.ConvertToServiceAccount))
 		serviceAccountsRoute.Get("/:serviceAccountId/tokens", auth(middleware.ReqOrgAdmin,
 			accesscontrol.EvalPermission(serviceaccounts.ActionRead, serviceaccounts.ScopeID)), routing.Wrap(api.ListTokens))
 		serviceAccountsRoute.Post("/:serviceAccountId/tokens", auth(middleware.ReqOrgAdmin,
@@ -87,7 +92,7 @@ func (api *ServiceAccountsAPI) CreateServiceAccount(c *models.ReqContext) respon
 	serviceAccount, err := api.store.CreateServiceAccount(c.Req.Context(), c.OrgId, cmd.Name)
 	switch {
 	case errors.Is(err, &database.ErrSAInvalidName{}):
-		return response.Error(http.StatusBadRequest, "Invalid service account name", err)
+		return response.Error(http.StatusBadRequest, "Failed due to %s", err)
 	case err != nil:
 		return response.Error(http.StatusInternalServerError, "Failed to create service account", err)
 	}
@@ -141,7 +146,7 @@ func (api *ServiceAccountsAPI) getAccessControlMetadata(c *models.ReqContext, sa
 		return map[string]accesscontrol.Metadata{}
 	}
 
-	return accesscontrol.GetResourcesMetadata(c.Req.Context(), permissions, "serviceaccounts", saIDs)
+	return accesscontrol.GetResourcesMetadata(c.Req.Context(), permissions, "serviceaccounts:id:", saIDs)
 }
 
 func (api *ServiceAccountsAPI) RetrieveServiceAccount(ctx *models.ReqContext) response.Response {
@@ -173,7 +178,7 @@ func (api *ServiceAccountsAPI) updateServiceAccount(c *models.ReqContext) respon
 		return response.Error(http.StatusBadRequest, "Service Account ID is invalid", err)
 	}
 
-	cmd := &serviceaccounts.UpdateServiceAccountForm{}
+	var cmd serviceaccounts.UpdateServiceAccountForm
 	if err := web.Bind(c.Req, &cmd); err != nil {
 		return response.Error(http.StatusBadRequest, "Bad request data", err)
 	}
@@ -181,8 +186,11 @@ func (api *ServiceAccountsAPI) updateServiceAccount(c *models.ReqContext) respon
 	if cmd.Role != nil && !cmd.Role.IsValid() {
 		return response.Error(http.StatusBadRequest, "Invalid role specified", nil)
 	}
+	if cmd.Role != nil && !c.OrgRole.Includes(*cmd.Role) {
+		return response.Error(http.StatusForbidden, "Cannot assign a role higher than user's role", nil)
+	}
 
-	resp, err := api.store.UpdateServiceAccount(c.Req.Context(), c.OrgId, scopeID, cmd)
+	resp, err := api.store.UpdateServiceAccount(c.Req.Context(), c.OrgId, scopeID, &cmd)
 	if err != nil {
 		switch {
 		case errors.Is(err, serviceaccounts.ErrServiceAccountNotFound):
@@ -191,6 +199,11 @@ func (api *ServiceAccountsAPI) updateServiceAccount(c *models.ReqContext) respon
 			return response.Error(http.StatusInternalServerError, "Failed update service account", err)
 		}
 	}
+
+	saIDString := strconv.FormatInt(resp.Id, 10)
+	metadata := api.getAccessControlMetadata(c, map[string]bool{saIDString: true})
+	resp.AvatarUrl = dtos.GetGravatarUrlWithDefault("", resp.Name)
+	resp.AccessControl = metadata[saIDString]
 
 	return response.JSON(http.StatusOK, resp)
 }
@@ -207,7 +220,13 @@ func (api *ServiceAccountsAPI) SearchOrgServiceAccountsWithPaging(c *models.ReqC
 	if page < 1 {
 		page = 1
 	}
-	serviceAccountSearch, err := api.store.SearchOrgServiceAccounts(ctx, c.OrgId, c.Query("query"), page, perPage, c.SignedInUser)
+	// its okay that it fails, it is only filtering that might be weird, but to safe quard against any weird incoming query param
+	onlyWithExpiredTokens := c.QueryBool("expiredTokens")
+	filter := serviceaccounts.FilterIncludeAll
+	if onlyWithExpiredTokens {
+		filter = serviceaccounts.FilterOnlyExpiredTokens
+	}
+	serviceAccountSearch, err := api.store.SearchOrgServiceAccounts(ctx, c.OrgId, c.Query("query"), filter, page, perPage, c.SignedInUser)
 	if err != nil {
 		return response.Error(http.StatusInternalServerError, "Failed to get service accounts for current organization", err)
 	}

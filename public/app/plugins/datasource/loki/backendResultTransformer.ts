@@ -1,7 +1,8 @@
-import { DataQueryRequest, DataQueryResponse, DataFrame, isDataFrame, FieldType, QueryResultMeta } from '@grafana/data';
-import { LokiQuery, LokiQueryType } from './types';
+import { DataQueryResponse, DataFrame, isDataFrame, FieldType, QueryResultMeta } from '@grafana/data';
+
 import { makeTableFrames } from './makeTableFrames';
 import { formatQuery, getHighlighterExpressionsFromQuery } from './query_utils';
+import { LokiQuery, LokiQueryType } from './types';
 
 function isMetricFrame(frame: DataFrame): boolean {
   return frame.fields.every((field) => field.type === FieldType.time || field.type === FieldType.number);
@@ -22,24 +23,13 @@ function processStreamFrame(frame: DataFrame, query: LokiQuery | undefined): Dat
   const meta: QueryResultMeta = {
     preferredVisualisationType: 'logs',
     searchWords: query !== undefined ? getHighlighterExpressionsFromQuery(formatQuery(query.expr)) : undefined,
+    custom: {
+      // used by logs_model
+      lokiQueryStatKey: 'Summary: total bytes processed',
+    },
   };
-  const newFrame = setFrameMeta(frame, meta);
-  const newFields = frame.fields.map((field) => {
-    // the nanosecond-timestamp field must have a type-time
-    if (field.name === 'tsNs') {
-      return {
-        ...field,
-        type: FieldType.time,
-      };
-    } else {
-      return field;
-    }
-  });
 
-  return {
-    ...newFrame,
-    fields: newFields,
-  };
+  return setFrameMeta(frame, meta);
 }
 
 function processStreamsFrames(frames: DataFrame[], queryMap: Map<string, LokiQuery>): DataFrame[] {
@@ -88,10 +78,7 @@ function groupFrames(
   return { streamsFrames, metricInstantFrames, metricRangeFrames };
 }
 
-export function transformBackendResult(
-  response: DataQueryResponse,
-  request: DataQueryRequest<LokiQuery>
-): DataQueryResponse {
+export function transformBackendResult(response: DataQueryResponse, queries: LokiQuery[]): DataQueryResponse {
   const { data, ...rest } = response;
 
   // in the typescript type, data is an array of basically anything.
@@ -104,7 +91,7 @@ export function transformBackendResult(
     return d;
   });
 
-  const queryMap = new Map(request.targets.map((query) => [query.refId, query]));
+  const queryMap = new Map(queries.map((query) => [query.refId, query]));
 
   const { streamsFrames, metricInstantFrames, metricRangeFrames } = groupFrames(dataFrames, queryMap);
 

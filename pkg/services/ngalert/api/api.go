@@ -11,10 +11,13 @@ import (
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/datasourceproxy"
 	"github.com/grafana/grafana/pkg/services/datasources"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
+	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/notifier"
+	"github.com/grafana/grafana/pkg/services/ngalert/provisioning"
 	"github.com/grafana/grafana/pkg/services/ngalert/schedule"
 	"github.com/grafana/grafana/pkg/services/ngalert/state"
 	"github.com/grafana/grafana/pkg/services/ngalert/store"
@@ -63,6 +66,8 @@ type API struct {
 	ExpressionService    *expr.Service
 	QuotaService         *quota.QuotaService
 	Schedule             schedule.ScheduleService
+	TransactionManager   provisioning.TransactionManager
+	ProvenanceStore      provisioning.ProvisioningStore
 	RuleStore            store.RuleStore
 	InstanceStore        store.InstanceStore
 	AlertingStore        AlertingStore
@@ -72,6 +77,9 @@ type API struct {
 	StateManager         *state.Manager
 	SecretsService       secrets.Service
 	AccessControl        accesscontrol.AccessControl
+	Policies             *provisioning.NotificationPolicyService
+	ContactPointService  *provisioning.ContactPointService
+	Templates            *provisioning.TemplateService
 }
 
 // RegisterAPIEndpoints registers API handlers
@@ -85,28 +93,38 @@ func (api *API) RegisterAPIEndpoints(m *metrics.API) {
 	api.RegisterAlertmanagerApiEndpoints(NewForkedAM(
 		api.DatasourceCache,
 		NewLotexAM(proxy, logger),
-		&AlertmanagerSrv{store: api.AlertingStore, mam: api.MultiOrgAlertmanager, secrets: api.SecretsService, log: logger},
+		&AlertmanagerSrv{crypto: api.MultiOrgAlertmanager.Crypto, log: logger, ac: api.AccessControl, mam: api.MultiOrgAlertmanager},
 	), m)
 	// Register endpoints for proxying to Prometheus-compatible backends.
 	api.RegisterPrometheusApiEndpoints(NewForkedProm(
 		api.DatasourceCache,
 		NewLotexProm(proxy, logger),
-		&PrometheusSrv{log: logger, manager: api.StateManager, store: api.RuleStore},
+		&PrometheusSrv{log: logger, manager: api.StateManager, store: api.RuleStore, ac: api.AccessControl},
 	), m)
 	// Register endpoints for proxying to Cortex Ruler-compatible backends.
 	api.RegisterRulerApiEndpoints(NewForkedRuler(
 		api.DatasourceCache,
 		NewLotexRuler(proxy, logger),
-		&RulerSrv{DatasourceCache: api.DatasourceCache, QuotaService: api.QuotaService, scheduleService: api.Schedule, store: api.RuleStore, log: logger, cfg: &api.Cfg.UnifiedAlerting},
+		&RulerSrv{
+			DatasourceCache: api.DatasourceCache,
+			QuotaService:    api.QuotaService,
+			scheduleService: api.Schedule,
+			store:           api.RuleStore,
+			provenanceStore: api.ProvenanceStore,
+			xactManager:     api.TransactionManager,
+			log:             logger,
+			cfg:             &api.Cfg.UnifiedAlerting,
+			ac:              api.AccessControl,
+		},
 	), m)
 	api.RegisterTestingApiEndpoints(NewForkedTestingApi(
 		&TestingApiSrv{
 			AlertingProxy:     proxy,
-			Cfg:               api.Cfg,
 			ExpressionService: api.ExpressionService,
 			DatasourceCache:   api.DatasourceCache,
-			secretsService:    api.SecretsService,
 			log:               logger,
+			accessControl:     api.AccessControl,
+			evaluator:         eval.NewEvaluator(api.Cfg, log.New("ngalert.eval"), api.DatasourceCache, api.SecretsService),
 		}), m)
 	api.RegisterConfigurationApiEndpoints(NewForkedConfiguration(
 		&AdminSrv{
@@ -115,4 +133,13 @@ func (api *API) RegisterAPIEndpoints(m *metrics.API) {
 			scheduler: api.Schedule,
 		},
 	), m)
+
+	if api.Cfg.IsFeatureToggleEnabled(featuremgmt.FlagAlertProvisioning) {
+		api.RegisterProvisioningApiEndpoints(NewForkedProvisioningApi(&ProvisioningSrv{
+			log:                 logger,
+			policies:            api.Policies,
+			contactPointService: api.ContactPointService,
+			templates:           api.Templates,
+		}), m)
+	}
 }

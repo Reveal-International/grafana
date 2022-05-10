@@ -1,87 +1,76 @@
-import { ArrayVector, CoreApp, DataFrame, DataQueryRequest, DataQueryResponse, FieldType, toUtc } from '@grafana/data';
 import { cloneDeep } from 'lodash';
 
-import { transformBackendResult } from './backendResultTransformer';
-import { LokiQuery } from './types';
+import { ArrayVector, DataFrame, DataQueryResponse, FieldType } from '@grafana/data';
 
-const frame: DataFrame = {
-  name: 'frame1',
+import { transformBackendResult } from './backendResultTransformer';
+
+const LOKI_EXPR = '{level="info"} |= "thing1"';
+const inputFrame: DataFrame = {
   refId: 'A',
   meta: {
-    executedQueryString: 'something1',
+    executedQueryString: LOKI_EXPR,
   },
   fields: [
     {
-      name: 'Time',
+      name: 'time',
       type: FieldType.time,
       config: {},
-      values: new ArrayVector([1645029699311, 1645029699312, 1645029699313]),
+      values: new ArrayVector([1645030244810, 1645030247027]),
     },
     {
-      name: 'Value',
+      name: 'value',
       type: FieldType.string,
-      labels: {
-        level: 'error',
-        location: 'moon',
-        protocol: 'http',
-      },
+      config: {},
+      values: new ArrayVector(['line1', 'line2']),
+    },
+    {
+      name: 'labels',
+      type: FieldType.string,
       config: {
-        displayNameFromDS: '{level="error", location="moon", protocol="http"}',
+        custom: {
+          json: true,
+        },
       },
-      values: new ArrayVector(['line1', 'line2', 'line3']),
+      values: new ArrayVector(['{ "level": "info", "code": "41🌙" }', '{ "level": "error", "code": "41🌙" }']),
     },
     {
       name: 'tsNs',
       type: FieldType.string,
       config: {},
-      values: new ArrayVector(['1645029699311000500', '1645029699312000500', '1645029699313000500']),
+      values: new ArrayVector(['1645030244810757120', '1645030247027735040']),
+    },
+    {
+      name: 'id',
+      type: FieldType.string,
+      config: {},
+      values: new ArrayVector(['id1', 'id2']),
     },
   ],
-  length: 1,
+  length: 5,
 };
-
-function makeRequest(expr: string): DataQueryRequest<LokiQuery> {
-  return {
-    requestId: 'test1',
-    interval: '1s',
-    intervalMs: 1000,
-    range: {
-      from: toUtc('2022-02-22T13:14:15'),
-      to: toUtc('2022-02-22T13:15:15'),
-      raw: {
-        from: toUtc('2022-02-22T13:14:15'),
-        to: toUtc('2022-02-22T13:15:15'),
-      },
-    },
-    scopedVars: {},
-    targets: [
-      {
-        refId: 'A',
-        expr,
-      },
-    ],
-    timezone: 'UTC',
-    app: CoreApp.Explore,
-    startTime: 0,
-  };
-}
 
 describe('loki backendResultTransformer', () => {
   it('processes a logs-dataframe correctly', () => {
-    const response: DataQueryResponse = { data: [cloneDeep(frame)] };
-    const request = makeRequest('{level="info"} |= "thing1"');
+    const response: DataQueryResponse = { data: [cloneDeep(inputFrame)] };
 
-    const expectedFrame = cloneDeep(frame);
+    const expectedFrame = cloneDeep(inputFrame);
     expectedFrame.meta = {
-      executedQueryString: 'something1',
+      ...expectedFrame.meta,
       preferredVisualisationType: 'logs',
       searchWords: ['thing1'],
+      custom: {
+        lokiQueryStatKey: 'Summary: total bytes processed',
+      },
     };
-    expectedFrame.fields[2].type = FieldType.time;
 
     const expected: DataQueryResponse = { data: [expectedFrame] };
 
-    const result = transformBackendResult(response, request);
+    const result = transformBackendResult(response, [
+      {
+        refId: 'A',
+        expr: LOKI_EXPR,
+      },
+    ]);
     expect(result).toEqual(expected);
   });
 });

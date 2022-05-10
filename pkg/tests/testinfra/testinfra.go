@@ -3,7 +3,6 @@ package testinfra
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -13,15 +12,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/ini.v1"
+
 	"github.com/grafana/grafana/pkg/api"
 	"github.com/grafana/grafana/pkg/infra/fs"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/server"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/setting"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/ini.v1"
 )
 
 // StartGrafana starts a Grafana server.
@@ -96,12 +96,7 @@ func SetUpDatabase(t *testing.T, grafDir string) *sqlstore.SQLStore {
 func CreateGrafDir(t *testing.T, opts ...GrafanaOpts) (string, string) {
 	t.Helper()
 
-	tmpDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := os.RemoveAll(tmpDir)
-		assert.NoError(t, err)
-	})
+	tmpDir := t.TempDir()
 
 	// Search upwards in directory tree for project root
 	var rootDir string
@@ -125,7 +120,7 @@ func CreateGrafDir(t *testing.T, opts ...GrafanaOpts) (string, string) {
 	require.True(t, found, "Couldn't detect project root directory")
 
 	cfgDir := filepath.Join(tmpDir, "conf")
-	err = os.MkdirAll(cfgDir, 0750)
+	err := os.MkdirAll(cfgDir, 0750)
 	require.NoError(t, err)
 	dataDir := filepath.Join(tmpDir, "data")
 	// nolint:gosec

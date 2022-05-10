@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/models"
 	dashboardsstore "github.com/grafana/grafana/pkg/services/dashboards/database"
@@ -35,8 +34,6 @@ func TestPrometheusRules(t *testing.T) {
 	})
 
 	grafanaListedAddr, store := testinfra.StartGrafana(t, dir, path)
-	// override bus to get the GetSignedInUserQuery handler
-	store.Bus = bus.GetBus()
 
 	// Create the namespace under default organisation (orgID = 1) where we'll save our alerts to.
 	_, err = createFolder(t, store, 0, "default")
@@ -209,7 +206,9 @@ func TestPrometheusRules(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 400, resp.StatusCode)
-		require.JSONEq(t, `{"message": "invalid rule specification at index [0]: both annotations __dashboardUid__ and __panelId__ must be specified"}`, string(b))
+		var res map[string]interface{}
+		require.NoError(t, json.Unmarshal(b, &res))
+		require.Equal(t, "invalid rule specification at index [0]: both annotations __dashboardUid__ and __panelId__ must be specified", res["message"])
 	}
 
 	// Now, let's see how this looks like.
@@ -245,7 +244,6 @@ func TestPrometheusRules(t *testing.T) {
 					"label1": "val1"
 				},
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -253,9 +251,7 @@ func TestPrometheusRules(t *testing.T) {
 				"state": "inactive",
 				"name": "AlwaysFiringButSilenced",
 				"query": "[{\"refId\":\"A\",\"queryType\":\"\",\"relativeTimeRange\":{\"from\":18000,\"to\":10800},\"datasourceUid\":\"-100\",\"model\":{\"expression\":\"2 + 3 \\u003e 1\",\"intervalMs\":1000,\"maxDataPoints\":43200,\"type\":\"math\"}}]",
-				"labels": null,
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -300,7 +296,6 @@ func TestPrometheusRules(t *testing.T) {
 					"label1": "val1"
 				},
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -308,9 +303,7 @@ func TestPrometheusRules(t *testing.T) {
 				"state": "inactive",
 				"name": "AlwaysFiringButSilenced",
 				"query": "[{\"refId\":\"A\",\"queryType\":\"\",\"relativeTimeRange\":{\"from\":18000,\"to\":10800},\"datasourceUid\":\"-100\",\"model\":{\"expression\":\"2 + 3 \\u003e 1\",\"intervalMs\":1000,\"maxDataPoints\":43200,\"type\":\"math\"}}]",
-				"labels": null,
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -336,8 +329,6 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 	})
 
 	grafanaListedAddr, store := testinfra.StartGrafana(t, dir, path)
-	// override bus to get the GetSignedInUserQuery handler
-	store.Bus = bus.GetBus()
 
 	// Create the namespace under default organisation (orgID = 1) where we'll save our alerts to.
 	dashboardUID, err := createFolder(t, store, 0, "default")
@@ -446,9 +437,7 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 					"__dashboardUid__": "%s",
 					"__panelId__": "1"
 				},
-				"labels": null,
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -456,9 +445,7 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 				"state": "inactive",
 				"name": "AlwaysFiringButSilenced",
 				"query": "[{\"refId\":\"A\",\"queryType\":\"\",\"relativeTimeRange\":{\"from\":18000,\"to\":10800},\"datasourceUid\":\"-100\",\"model\":{\"expression\":\"2 + 3 \\u003e 1\",\"intervalMs\":1000,\"maxDataPoints\":43200,\"type\":\"math\"}}]",
-				"labels": null,
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -485,9 +472,7 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 					"__dashboardUid__": "%s",
 					"__panelId__": "1"
 				},
-				"labels": null,
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -604,7 +589,9 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		b, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
-		require.JSONEq(t, `{"message": "invalid panel_id: strconv.ParseInt: parsing \"invalid\": invalid syntax"}`, string(b))
+		var res map[string]interface{}
+		require.NoError(t, json.Unmarshal(b, &res))
+		require.Equal(t, `invalid panel_id: strconv.ParseInt: parsing "invalid": invalid syntax`, res["message"])
 	}
 
 	// Now, let's check a panel_id without dashboard_uid returns a 400 Bad Request response
@@ -620,7 +607,9 @@ func TestPrometheusRulesFilterByDashboard(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		b, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
-		require.JSONEq(t, `{"message": "panel_id must be set with dashboard_uid"}`, string(b))
+		var res map[string]interface{}
+		require.NoError(t, json.Unmarshal(b, &res))
+		require.Equal(t, "panel_id must be set with dashboard_uid", res["message"])
 	}
 }
 
@@ -637,8 +626,6 @@ func TestPrometheusRulesPermissions(t *testing.T) {
 
 	grafanaListedAddr, store := testinfra.StartGrafana(t, dir, path)
 	dashboardsStore := dashboardsstore.ProvideDashboardStore(store)
-	// override bus to get the GetSignedInUserQuery handler
-	store.Bus = bus.GetBus()
 
 	// Create a user to make authenticated requests
 	createUser(t, store, models.CreateUserCommand{
@@ -694,7 +681,6 @@ func TestPrometheusRulesPermissions(t *testing.T) {
 					"label1": "val1"
 				},
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -718,7 +704,6 @@ func TestPrometheusRulesPermissions(t *testing.T) {
 					"label1": "val1"
 				},
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0
@@ -767,7 +752,6 @@ func TestPrometheusRulesPermissions(t *testing.T) {
 					"label1": "val1"
 				},
 				"health": "ok",
-				"lastError": "",
 				"type": "alerting",
 				"lastEvaluation": "0001-01-01T00:00:00Z",
 				"evaluationTime": 0

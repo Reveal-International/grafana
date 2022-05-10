@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/login/authinfoservice/database"
 	secretstore "github.com/grafana/grafana/pkg/services/secrets/database"
@@ -20,7 +19,7 @@ import (
 func TestUserAuth(t *testing.T) {
 	sqlStore := sqlstore.InitTestDB(t)
 	secretsService := secretsManager.SetupTestService(t, secretstore.ProvideSecretsStore(sqlStore))
-	authInfoStore := database.ProvideAuthInfoStore(sqlStore, bus.New(), secretsService)
+	authInfoStore := database.ProvideAuthInfoStore(sqlStore, secretsService)
 	srv := ProvideAuthInfoService(&OSSUserProtectionImpl{}, authInfoStore)
 
 	t.Run("Given 5 users", func(t *testing.T) {
@@ -47,7 +46,7 @@ func TestUserAuth(t *testing.T) {
 			// By ID
 			id := user.Id
 
-			_, user, err = srv.LookupByOneOf(id, "", "")
+			user, err = srv.LookupByOneOf(context.Background(), id, "", "")
 
 			require.Nil(t, err)
 			require.Equal(t, user.Id, id)
@@ -55,7 +54,7 @@ func TestUserAuth(t *testing.T) {
 			// By Email
 			email := "user1@test.com"
 
-			_, user, err = srv.LookupByOneOf(0, email, "")
+			user, err = srv.LookupByOneOf(context.Background(), 0, email, "")
 
 			require.Nil(t, err)
 			require.Equal(t, user.Email, email)
@@ -63,7 +62,7 @@ func TestUserAuth(t *testing.T) {
 			// Don't find nonexistent user
 			email = "nonexistent@test.com"
 
-			_, user, err = srv.LookupByOneOf(0, email, "")
+			user, err = srv.LookupByOneOf(context.Background(), 0, email, "")
 
 			require.Equal(t, models.ErrUserNotFound, err)
 			require.Nil(t, user)

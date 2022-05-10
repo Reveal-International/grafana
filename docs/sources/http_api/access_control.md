@@ -1,16 +1,16 @@
 +++
-title = "Fine-grained access control HTTP API "
-description = "Fine-grained access control API"
-keywords = ["grafana", "http", "documentation", "api", "fine-grained-access-control", "acl", "enterprise"]
+title = "RBAC HTTP API"
+description = ""
+keywords = ["grafana", "http", "documentation", "api", "role-based-access-control", "acl", "enterprise"]
 aliases = ["/docs/grafana/latest/http_api/accesscontrol/"]
 +++
 
-# Fine-grained access control API
+# RBAC API
 
-> Fine-grained access control API is only available in Grafana Enterprise. Read more about [Grafana Enterprise]({{< relref "../enterprise" >}}).
+> Role-based access control API is only available in Grafana Enterprise. Read more about [Grafana Enterprise]({{< relref "../enterprise" >}}).
 
 The API can be used to create, update, get and list roles, and create or remove built-in role assignments.
-To use the API, you would need to [enable fine-grained access control]({{< relref "../enterprise/access-control/_index.md#enable-fine-grained-access-control" >}}).
+To use the API, you would need to [enable role-based access control]({{< relref "../enterprise/access-control/_index.md#enable-role-based-access-control" >}}).
 
 The API does not currently work with an API Token. So in order to use these API endpoints you will have to use [Basic auth]({{< relref "./auth/#basic-auth" >}}).
 
@@ -18,9 +18,9 @@ The API does not currently work with an API Token. So in order to use these API 
 
 `GET /api/access-control/status`
 
-Returns an indicator to check if fine-grained access control is enabled or not.
+Returns an indicator to check if role-based access control is enabled or not.
 
-### Required permissions
+#### Required permissions
 
 | Action               | Scope                  |
 | -------------------- | ---------------------- |
@@ -47,12 +47,12 @@ Content-Type: application/json; charset=UTF-8
 
 #### Status codes
 
-| Code | Description                                                                        |
-| ---- | ---------------------------------------------------------------------------------- |
-| 200  | Returned a flag indicating if the fine-grained access control is enabled or no.    |
-| 403  | Access denied                                                                      |
-| 404  | Not found, an indication that fine-grained access control is not available at all. |
-| 500  | Unexpected error. Refer to body and/or server logs for more details.               |
+| Code | Description                                                                      |
+| ---- | -------------------------------------------------------------------------------- |
+| 200  | Returned a flag indicating if the role-based access control is enabled or no.    |
+| 403  | Access denied                                                                    |
+| 404  | Not found, an indication that role-based access control is not available at all. |
+| 500  | Unexpected error. Refer to body and/or server logs for more details.             |
 
 ## Create and manage custom roles
 
@@ -62,7 +62,11 @@ Content-Type: application/json; charset=UTF-8
 
 Gets all existing roles. The response contains all global and organization local roles, for the organization which user is signed in.
 
-Refer to the [Role scopes]({{< relref "../enterprise/access-control/roles.md#built-in-role-assignments" >}}) for more information.
+Refer to the [Basic roles]({{< relref "../enterprise/access-control/about-rbac#basic-roles" >}}) for more information.
+
+Query Parameters:
+
+- `includeHidden`: Optional. Set to `true` to include roles that are `hidden`.
 
 #### Required permissions
 
@@ -211,7 +215,7 @@ Content-Type: application/json; charset=UTF-8
 
 `POST /api/access-control/roles`
 
-Creates a new custom role and maps given permissions to that role. Note that roles with the same prefix as [Fixed Roles]({{< relref "../enterprise/access-control/roles.md" >}}) can't be created.
+Creates a new custom role and maps given permissions to that role. Note that roles with the same prefix as [Fixed roles]({{< relref "../enterprise/access-control/about-rbac#fixed-roles" >}}) can't be created.
 
 #### Required permissions
 
@@ -249,23 +253,24 @@ Content-Type: application/json
 
 #### JSON body schema
 
-| Field Name  | Date Type  | Required | Description                                                                                                                                                                                                                                                         |
-| ----------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| uid         | string     | No       | UID of the role. If not present, the UID will be automatically created for you and returned in response. Refer to the [Custom roles]({{< relref "../enterprise/access-control/roles.md#custom-roles" >}}) for more information.                                     |
-| global      | boolean    | No       | A flag indicating if the role is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request. Refer to the [Role scopes]({{< relref "../enterprise/access-control/roles.md#role-scopes" >}}) for more information. |
-| version     | number     | No       | Version of the role. If not present, version 0 will be assigned to the role and returned in the response. Refer to the [Custom roles]({{< relref "../enterprise/access-control/roles.md#custom-roles" >}}) for more information.                                    |
-| name        | string     | Yes      | Name of the role. Refer to [Custom roles]({{< relref "../enterprise/access-control/roles.md#custom-roles" >}}) for more information.                                                                                                                                |
-| description | string     | No       | Description of the role.                                                                                                                                                                                                                                            |
-| displayName | string     | No       | Display name of the role, visible in the UI.                                                                                                                                                                                                                        |
-| group       | string     | No       | The group name the role belongs to.                                                                                                                                                                                                                                 |
-| permissions | Permission | No       | If not present, the role will be created without any permissions.                                                                                                                                                                                                   |
+| Field Name  | Date Type  | Required | Description                                                                                                                                                                                                                        |
+| ----------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| uid         | string     | No       | UID of the role. If not present, the UID will be automatically created for you and returned in response. Refer to the [Custom roles]({{< relref "../enterprise/access-control/about-rbac#custom-roles" >}}) for more information.  |
+| global      | boolean    | No       | A flag indicating if the role is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request.                                                                                     |
+| version     | number     | No       | Version of the role. If not present, version 0 will be assigned to the role and returned in the response. Refer to the [Custom roles]({{< relref "../enterprise/access-control/about-rbac#custom-roles" >}}) for more information. |
+| name        | string     | Yes      | Name of the role. Refer to [Custom roles]({{< relref "../enterprise/access-control/about-rbac#custom-roles" >}}) for more information.                                                                                             |
+| description | string     | No       | Description of the role.                                                                                                                                                                                                           |
+| displayName | string     | No       | Display name of the role, visible in the UI.                                                                                                                                                                                       |
+| group       | string     | No       | The group name the role belongs to.                                                                                                                                                                                                |
+| hidden      | boolean    | No       | Specify whether the role is hidden or not. If set to `true`, then the role does not show in the role picker. It will not be listed by API endpoints unless explicitly specified.                                                   |
+| permissions | Permission | No       | If not present, the role will be created without any permissions.                                                                                                                                                                  |
 
 **Permission**
 
-| Field Name | Data Type | Required | Description                                                                                                                                                                                          |
-| ---------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| action     | string    | Yes      | Refer to [Permissions]({{< relref "../enterprise/access-control/permissions.md" >}}) for full list of available actions.                                                                             |
-| scope      | string    | No       | If not present, no scope will be mapped to the permission. Refer to [Permissions]({{< relref "../enterprise/access-control/permissions.md#scope-definitions" >}}) for full list of available scopes. |
+| Field Name | Data Type | Required | Description                                                                                                                                                                                                        |
+| ---------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| action     | string    | Yes      | Refer to [Custom role actions and scopes]({{< relref "../enterprise/access-control/custom-role-actions-scopes" >}}) for full list of available actions.                                                            |
+| scope      | string    | No       | If not present, no scope will be mapped to the permission. Refer to [[Custom role actions and scopes]({{< relref "../enterprise/access-control/custom-role-actions-scopes" >}}) for full list of available scopes. |
 
 #### Example response
 
@@ -349,21 +354,22 @@ Content-Type: application/json
 
 #### JSON body schema
 
-| Field Name  | Data Type           | Required | Description                                                         |
-| ----------- | ------------------- | -------- | ------------------------------------------------------------------- |
-| version     | number              | Yes      | Version of the role. Must be incremented for update to work.        |
-| name        | string              | Yes      | Name of the role.                                                   |
-| description | string              | No       | Description of the role.                                            |
-| displayName | string              | No       | Display name of the role, visible in the UI.                        |
-| group       | string              | No       | The group name the role belongs to.                                 |
-| permissions | List of Permissions | No       | The full list of permissions the role should have after the update. |
+| Field Name  | Data Type           | Required | Description                                                                                                                                                                      |
+| ----------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| version     | number              | Yes      | Version of the role. Must be incremented for update to work.                                                                                                                     |
+| name        | string              | Yes      | Name of the role.                                                                                                                                                                |
+| description | string              | No       | Description of the role.                                                                                                                                                         |
+| displayName | string              | No       | Display name of the role, visible in the UI.                                                                                                                                     |
+| group       | string              | No       | The group name the role belongs to.                                                                                                                                              |
+| hidden      | boolean             | No       | Specify whether the role is hidden or not. If set to `true`, then the role does not show in the role picker. It will not be listed by API endpoints unless explicitly specified. |
+| permissions | List of Permissions | No       | The full list of permissions for the role after the update.                                                                                                                      |
 
 **Permission**
 
-| Field Name | Data Type | Required | Description                                                                                                                                                                                          |
-| ---------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| action     | string    | Yes      | Refer to [Permissions]({{< relref "../enterprise/access-control/permissions.md" >}}) for full list of available actions.                                                                             |
-| scope      | string    | No       | If not present, no scope will be mapped to the permission. Refer to [Permissions]({{< relref "../enterprise/access-control/permissions.md#scope-definitions" >}}) for full list of available scopes. |
+| Field Name | Data Type | Required | Description                                                                                                                                                                                                       |
+| ---------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| action     | string    | Yes      | Refer to [Custom role actions and scopes]({{< relref "../enterprise/access-control/custom-role-actions-scopes" >}}) for full list of available actions.                                                           |
+| scope      | string    | No       | If not present, no scope will be mapped to the permission. Refer to [Custom role actions and scopes]({{< relref "../enterprise/access-control/custom-role-actions-scopes" >}}) for full list of available scopes. |
 
 #### Example response
 
@@ -433,10 +439,10 @@ Accept: application/json
 
 #### Query parameters
 
-| Param  | Type    | Required | Description                                                                                                                                                                                                                                                                     |
-| ------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| force  | boolean | No       | When set to `true`, the role will be deleted with all it's assignments.                                                                                                                                                                                                         |
-| global | boolean | No       | A flag indicating if the role is global or not. If set to false, the default org ID of the authenticated user will be used from the request. Refer to the [Role scopes]({{< relref "../enterprise/access-control/roles.md#built-in-role-assignments" >}}) for more information. |
+| Param  | Type    | Required | Description                                                                                                                                                                                                                                            |
+| ------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| force  | boolean | No       | When set to `true`, the role will be deleted with all it's assignments.                                                                                                                                                                                |
+| global | boolean | No       | A flag indicating if the role is global or not. If set to false, the default org ID of the authenticated user will be used from the request. Refer to the [About RBAC]({{< relref "../enterprise/access-control/about-rbac" >}}) for more information. |
 
 #### Example response
 
@@ -465,6 +471,10 @@ Content-Type: application/json; charset=UTF-8
 `GET /api/access-control/users/:userId/roles`
 
 Lists the roles that have been directly assigned to a given user. The list does not include built-in roles (Viewer, Editor, Admin or Grafana Admin), and it does not include roles that have been inherited from a team.
+
+Query Parameters:
+
+- `includeHidden`: Optional. Set to `true` to include roles that are `hidden`.
 
 #### Required permissions
 
@@ -702,10 +712,11 @@ Content-Type: application/json
 
 #### JSON body schema
 
-| Field Name | Date Type | Required | Description                                                                                                                                          |
-| ---------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| global     | boolean   | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request. |
-| roleUids   | list      | Yes      | List of role UIDs.                                                                                                                                   |
+| Field Name    | Date Type | Required | Description                                                                                                                                          |
+| ------------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| global        | boolean   | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request. |
+| roleUids      | list      | Yes      | List of role UIDs.                                                                                                                                   |
+| includeHidden | boolean   | No       | Specify whether the hidden role assignments should be updated.                                                                                       |
 
 #### Example response
 
@@ -734,6 +745,10 @@ Content-Type: application/json; charset=UTF-8
 `GET /api/access-control/teams/:teamId/roles`
 
 Lists the roles that have been directly assigned to a given team.
+
+Query Parameters:
+
+- `includeHidden`: Optional. Set to `true` to include roles that are `hidden`.
 
 #### Required permissions
 
@@ -832,7 +847,7 @@ Content-Type: application/json; charset=UTF-8
 | 404  | Role not found.                                                      |
 | 500  | Unexpected error. Refer to body and/or server logs for more details. |
 
-## Remove a user role assignment
+## Remove a team role assignment
 
 `DELETE /api/access-control/teams/:teams/roles/:roleUID`
 
@@ -915,9 +930,10 @@ Content-Type: application/json
 
 #### JSON body schema
 
-| Field Name | Date Type | Required | Description        |
-| ---------- | --------- | -------- | ------------------ |
-| roleUids   | list      | Yes      | List of role UIDs. |
+| Field Name    | Date Type | Required | Description                                                    |
+| ------------- | --------- | -------- | -------------------------------------------------------------- |
+| roleUids      | list      | Yes      | List of role UIDs.                                             |
+| includeHidden | boolean   | No       | Specify whether the hidden role assignments should be updated. |
 
 #### Example response
 
@@ -939,15 +955,21 @@ Content-Type: application/json; charset=UTF-8
 | 404  | Role not found.                                                      |
 | 500  | Unexpected error. Refer to body and/or server logs for more details. |
 
-## Create and remove built-in role assignments
+## Create and remove built-in (basic) role assignments
 
-API set allows to create or remove [built-in role assignments]({{< relref "../enterprise/access-control/roles.md#built-in-role-assignments" >}}) and list current assignments.
+API set allows to create or remove [basic role assignments]({{< relref "../enterprise/access-control/assign-rbac-roles" >}}) and list current assignments.
+
+> **Note:** Basic roles are referred to as **"built-in"** roles in the API. "Basic" and "built-in" refer to the same thing: the Grafana Administrator, Org Administrator, Editor, and Viewer roles.
 
 ### Get all built-in role assignments
 
 `GET /api/access-control/builtin-roles`
 
 Gets all built-in role assignments.
+
+Query Parameters:
+
+- `includeHidden`: Optional. Set to `true` to include roles that are `hidden`.
 
 #### Required permissions
 
@@ -1046,11 +1068,11 @@ Content-Type: application/json
 
 #### JSON body schema
 
-| Field Name  | Date Type | Required | Description                                                                                                                                                                                                                                                                                                                                   |
-| ----------- | --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| roleUid     | string    | Yes      | UID of the role.                                                                                                                                                                                                                                                                                                                              |
-| builtinRole | boolean   | Yes      | Can be one of `Viewer`, `Editor`, `Admin` or `Grafana Admin`.                                                                                                                                                                                                                                                                                 |
-| global      | boolean   | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request to create organization local assignment. Refer to the [Built-in role assignments]({{< relref "../enterprise/access-control/roles.md#built-in-role-assignments" >}}) for more information. |
+| Field Name  | Date Type | Required | Description                                                                                                                                                                                  |
+| ----------- | --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| roleUid     | string    | Yes      | UID of the role.                                                                                                                                                                             |
+| builtinRole | boolean   | Yes      | Can be one of `Viewer`, `Editor`, `Admin` or `Grafana Admin`.                                                                                                                                |
+| global      | boolean   | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request to create organization local assignment. |
 
 #### Example response
 
@@ -1097,9 +1119,9 @@ Accept: application/json
 
 #### Query parameters
 
-| Param  | Type    | Required | Description                                                                                                                                                                                                                                                                                                                |
-| ------ | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| global | boolean | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request to remove assignment. Refer to the [Built-in role assignments]({{< relref "../enterprise/access-control/roles.md#built-in-role-assignments" >}}) for more information. |
+| Param  | Type    | Required | Description                                                                                                                                                               |
+| ------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| global | boolean | No       | A flag indicating if the assignment is global or not. If set to `false`, the default org ID of the authenticated user will be used from the request to remove assignment. |
 
 #### Example response
 

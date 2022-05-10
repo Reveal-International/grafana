@@ -27,7 +27,7 @@ func TestAccountDataAccess(t *testing.T) {
 
 			for i := 1; i < 4; i++ {
 				cmd = &models.CreateOrgCommand{Name: fmt.Sprint("Org #", i)}
-				err = CreateOrg(context.Background(), cmd)
+				err = sqlStore.CreateOrg(context.Background(), cmd)
 				require.NoError(t, err)
 
 				ids = append(ids, cmd.Result.Id)
@@ -44,7 +44,7 @@ func TestAccountDataAccess(t *testing.T) {
 			sqlStore = InitTestDB(t)
 			for i := 1; i < 4; i++ {
 				cmd := &models.CreateOrgCommand{Name: fmt.Sprint("Org #", i)}
-				err := CreateOrg(context.Background(), cmd)
+				err := sqlStore.CreateOrg(context.Background(), cmd)
 				require.NoError(t, err)
 			}
 
@@ -164,7 +164,7 @@ func TestAccountDataAccess(t *testing.T) {
 
 			t.Run("Can search users", func(t *testing.T) {
 				query := models.SearchUsersQuery{Query: ""}
-				err := SearchUsers(context.Background(), &query)
+				err := sqlStore.SearchUsers(context.Background(), &query)
 
 				require.NoError(t, err)
 				require.Len(t, query.Result.Users, 2)

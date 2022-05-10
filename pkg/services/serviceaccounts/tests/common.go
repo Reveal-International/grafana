@@ -38,6 +38,10 @@ func SetupUserServiceAccount(t *testing.T, sqlStore *sqlstore.SQLStore, testUser
 // create mock for serviceaccountservice
 type ServiceAccountMock struct{}
 
+func (s *ServiceAccountMock) RetrieveServiceAccountIdByName(ctx context.Context, orgID int64, name string) (int64, error) {
+	return 0, nil
+}
+
 func (s *ServiceAccountMock) CreateServiceAccount(ctx context.Context, orgID int64, name string) (*serviceaccounts.ServiceAccountDTO, error) {
 	return nil, nil
 }
@@ -65,22 +69,29 @@ func SetupMockAccesscontrol(t *testing.T,
 // this is a way to see
 // that the Mock implements the store interface
 var _ serviceaccounts.Store = new(ServiceAccountsStoreMock)
+var _ serviceaccounts.Service = new(ServiceAccountMock)
 
 type Calls struct {
-	CreateServiceAccount      []interface{}
-	RetrieveServiceAccount    []interface{}
-	DeleteServiceAccount      []interface{}
-	UpgradeServiceAccounts    []interface{}
-	ConvertServiceAccounts    []interface{}
-	ListTokens                []interface{}
-	DeleteServiceAccountToken []interface{}
-	UpdateServiceAccount      []interface{}
-	AddServiceAccountToken    []interface{}
-	SearchOrgServiceAccounts  []interface{}
+	CreateServiceAccount           []interface{}
+	RetrieveServiceAccount         []interface{}
+	DeleteServiceAccount           []interface{}
+	UpgradeServiceAccounts         []interface{}
+	ConvertServiceAccounts         []interface{}
+	ListTokens                     []interface{}
+	DeleteServiceAccountToken      []interface{}
+	UpdateServiceAccount           []interface{}
+	AddServiceAccountToken         []interface{}
+	SearchOrgServiceAccounts       []interface{}
+	RetrieveServiceAccountIdByName []interface{}
 }
 
 type ServiceAccountsStoreMock struct {
 	Calls Calls
+}
+
+func (s *ServiceAccountsStoreMock) RetrieveServiceAccountIdByName(ctx context.Context, orgID int64, name string) (int64, error) {
+	s.Calls.RetrieveServiceAccountIdByName = append(s.Calls.RetrieveServiceAccountIdByName, []interface{}{ctx, orgID, name})
+	return 0, nil
 }
 
 func (s *ServiceAccountsStoreMock) CreateServiceAccount(ctx context.Context, orgID int64, name string) (*serviceaccounts.ServiceAccountDTO, error) {
@@ -123,7 +134,13 @@ func (s *ServiceAccountsStoreMock) UpdateServiceAccount(ctx context.Context,
 	return nil, nil
 }
 
-func (s *ServiceAccountsStoreMock) SearchOrgServiceAccounts(ctx context.Context, orgID int64, query string, page int, limit int,
+func (s *ServiceAccountsStoreMock) SearchOrgServiceAccounts(
+	ctx context.Context,
+	orgID int64,
+	query string,
+	filter serviceaccounts.ServiceAccountFilter,
+	page int,
+	limit int,
 	user *models.SignedInUser) (*serviceaccounts.SearchServiceAccountsResult, error) {
 	s.Calls.SearchOrgServiceAccounts = append(s.Calls.SearchOrgServiceAccounts, []interface{}{ctx, orgID, query, page, limit, user})
 	return nil, nil
@@ -134,7 +151,11 @@ func (s *ServiceAccountsStoreMock) DeleteServiceAccountToken(ctx context.Context
 	return nil
 }
 
-func (s *ServiceAccountsStoreMock) AddServiceAccountToken(ctx context.Context, serviceAccountID int64, cmd *models.AddApiKeyCommand) error {
+func (s *ServiceAccountsStoreMock) AddServiceAccountToken(ctx context.Context, serviceAccountID int64, cmd *serviceaccounts.AddServiceAccountTokenCommand) error {
 	s.Calls.AddServiceAccountToken = append(s.Calls.AddServiceAccountToken, []interface{}{ctx, cmd})
 	return nil
+}
+
+func (s *ServiceAccountsStoreMock) GetUsageMetrics(ctx context.Context) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
 }

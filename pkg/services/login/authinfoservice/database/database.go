@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/secrets"
@@ -16,28 +15,17 @@ var GetTime = time.Now
 
 type AuthInfoStore struct {
 	sqlStore       sqlstore.Store
-	bus            bus.Bus
 	secretsService secrets.Service
 	logger         log.Logger
 }
 
-func ProvideAuthInfoStore(sqlStore sqlstore.Store, bus bus.Bus, secretsService secrets.Service) *AuthInfoStore {
+func ProvideAuthInfoStore(sqlStore sqlstore.Store, secretsService secrets.Service) *AuthInfoStore {
 	store := &AuthInfoStore{
 		sqlStore:       sqlStore,
-		bus:            bus,
 		secretsService: secretsService,
 		logger:         log.New("login.authinfo.store"),
 	}
-	store.registerBusHandlers()
 	return store
-}
-
-func (s *AuthInfoStore) registerBusHandlers() {
-	s.bus.AddHandler(s.GetExternalUserInfoByLogin)
-	s.bus.AddHandler(s.GetAuthInfo)
-	s.bus.AddHandler(s.SetAuthInfo)
-	s.bus.AddHandler(s.UpdateAuthInfo)
-	s.bus.AddHandler(s.DeleteAuthInfo)
 }
 
 func (s *AuthInfoStore) GetExternalUserInfoByLogin(ctx context.Context, query *models.GetExternalUserInfoByLoginQuery) error {
@@ -214,33 +202,31 @@ func (s *AuthInfoStore) DeleteAuthInfo(ctx context.Context, cmd *models.DeleteAu
 	})
 }
 
-func (s *AuthInfoStore) GetUserById(id int64) (bool, *models.User, error) {
-	var (
-		has bool
-		err error
-	)
-	user := &models.User{}
-	err = s.sqlStore.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
-		has, err = sess.ID(id).Get(user)
-		return err
-	})
-	if err != nil {
-		return false, nil, err
+func (s *AuthInfoStore) GetUserById(ctx context.Context, id int64) (*models.User, error) {
+	query := models.GetUserByIdQuery{Id: id}
+	if err := s.sqlStore.GetUserById(ctx, &query); err != nil {
+		return nil, err
 	}
 
-	return has, user, nil
+	return query.Result, nil
 }
 
-func (s *AuthInfoStore) GetUser(user *models.User) (bool, error) {
-	var err error
-	var has bool
+func (s *AuthInfoStore) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+	query := models.GetUserByLoginQuery{LoginOrEmail: login}
+	if err := s.sqlStore.GetUserByLogin(ctx, &query); err != nil {
+		return nil, err
+	}
 
-	err = s.sqlStore.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
-		has, err = sess.Get(user)
-		return err
-	})
+	return query.Result, nil
+}
 
-	return has, err
+func (s *AuthInfoStore) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	query := models.GetUserByEmailQuery{Email: email}
+	if err := s.sqlStore.GetUserByEmail(ctx, &query); err != nil {
+		return nil, err
+	}
+
+	return query.Result, nil
 }
 
 // decodeAndDecrypt will decode the string with the standard base64 decoder and then decrypt it
